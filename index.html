@@ -1093,10 +1093,10 @@
         }
 
         const SPOTS = [
-            { id: 'kmm', kor: 'KMM ARCADE', sub: 'PLAYABLE - INSERT COIN', desc: '이 오락기 안에 진짜 게임이 있습니다. 영역을 칠하고, 적을 피하고, 황금 열쇠를 모으는 3스테이지.', badge: 'STAGE 3 = HELL MODE', color: '#00e5ff', hex: 0x0b3a44, angle: -90, play: true, actLabel: '▶ 플레이 (E)' },
-            { id: 'gghf', kor: 'GGHF STUDIO', sub: 'SOLO INDIE STUDIO', desc: '게임 만드는 최경환. 인천 서구에서 출발해 강남까지, 만들고 부수며 재미를 찾는다. 연락: team.gghf@gmail.com · X @vibeGGHF', color: '#6ee7b7', hex: 0x1d4438, angle: -30, link: 'https://gghf.itch.io', actLabel: 'itch.io 열기 (E)' },
+            { id: 'kmm', kor: 'KMM ARCADE', sub: 'NEON CABINET', desc: '오락실 지구의 네온 오락기. 동쪽 주택에서 kmm adventure를 플레이할 수 있습니다.', badge: 'DECOR', color: '#00e5ff', hex: 0x0b3a44, angle: -90, arcade: true },
+            { id: 'gghf', kor: 'GGHF STUDIO', sub: 'WEST RED HOUSE · itch.io', desc: 'GGHF 인디 게임 스튜디오. itch.io에서 프로토타입과 출시작을 만나보세요.', color: '#ff6b5c', hex: 0x5a2420, angle: -30, link: 'https://gghf.itch.io', actLabel: 'gghf.itch.io 열기 (E)' },
             { id: 'nemo', kor: 'NEMO_D.O', sub: 'LIVE - GOOGLE PLAY', desc: '두 로봇이 똑같이 움직이는 듀얼 퍼즐 액션. 평점 4.8, 지금도 서비스 중.', badge: 'BIC 2016-18 · TGS 2017-18 · Casual Connect Asia 2017 Indie Prize', color: '#ff9d5c', hex: 0x4a2c18, angle: 30, link: 'https://play.google.com/store/apps/details?id=com.GGHF.Nemo_DO', actLabel: 'Google Play (E)' },
-            { id: 'hite', kor: 'HITEZERO', sub: 'IN PREP - 유성막기', desc: '서브컬처 핀볼 액션. Godot 4로 만드는 중.', color: '#ff7ac8', hex: 0x44203a, angle: 90, link: 'https://hitezero-guide.netlify.app/google_play_registration_manual', actLabel: '출시 매뉴얼 (E)' },
+            { id: 'hite', kor: 'EAST VILLA', sub: '9 WINDOWS · TRAIL GAME', desc: '동쪽 창문 아홉 개 주택. E를 누르면 kmm adventure 트레일 게임을 바로 플레이할 수 있습니다.', color: '#ff7ac8', hex: 0x44203a, angle: 90, play: true, actLabel: '▶ 트레일 게임 (E)' },
             { id: 'paper', kor: 'PAPER HEROES', sub: 'IN DEV', desc: '한 줄 라인 디펜스. 종이 영웅들이 성을 지킨다.', color: '#9aa2ff', hex: 0x272c56, angle: 150 },
             { id: 'study', kor: 'VIBECODING', sub: 'OPEN - GANGNAM', desc: '현업 게임인끼리 AI 도구 시행착오를 나누는 강남 오프라인 스터디.', color: '#ffd76a', hex: 0x4a3c14, angle: 210, link: 'https://www.somoim.co.kr/17842e1e-0563-4587-9d45-aa12ce04d9df1', actLabel: '참여 문의 (E)' }
         ];
@@ -1106,13 +1106,13 @@
             s.lon = a;
             s.lat = 0;
             const grp = new THREE.Group();
-            const w = s.play ? 2.8 : 3.4;
-            const h = s.play ? 5.4 : 4.8 + Math.abs(Math.sin(a * 3)) * 2.2;
-            const dep = s.play ? 2.4 : 3.2;
+            const w = s.arcade ? 2.8 : 3.4;
+            const h = s.arcade ? 5.4 : 4.8 + Math.abs(Math.sin(a * 3)) * 2.2;
+            const dep = s.arcade ? 2.4 : 3.2;
             const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, dep), new THREE.MeshLambertMaterial({ color: s.hex }));
             body.position.y = h / 2; grp.add(body);
             const winMat = new THREE.MeshBasicMaterial({ color: s.color });
-            if (!s.play) {
+            if (s.arcade) {
                 for (let wy = 0; wy < 3; wy++) for (let wx = -1; wx <= 1; wx++) {
                     const win = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.55), winMat);
                     win.position.set(wx * 0.95, 1.1 + wy * 1.15, dep / 2 + 0.02);
@@ -1228,8 +1228,14 @@
         document.getElementById('back-to-village').onclick = () => { pauseInlineGame(); enterVillage(); };
 
         function updatePanel() {
-            let best = null, bd = 4.4;
-            for (const s of SPOTS) { const d = hero.position.distanceTo(s.pos); if (d < bd) { bd = d; best = s; } }
+            let best = null, bd = 5.2;
+            const hp = planetPos(heroLon, heroLat).normalize();
+            for (const s of SPOTS) {
+                const sp = s.pos.clone().normalize();
+                const ang = Math.acos(Math.max(-1, Math.min(1, hp.dot(sp))));
+                const surfDist = ang * PLANET_R;
+                if (surfDist < bd) { bd = surfDist; best = s; }
+            }
             if (best !== nearSpot) {
                 nearSpot = best;
                 if (best) {
