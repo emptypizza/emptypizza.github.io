@@ -1007,28 +1007,79 @@
         renderer.domElement.setAttribute('aria-label', '3D 마을 이동 영역');
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x10142a);
-        scene.fog = new THREE.Fog(0x10142a, 22, 46);
-        const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 100);
+        scene.background = new THREE.Color(0x080a14);
+        scene.fog = new THREE.Fog(0x080a14, 30, 58);
+        const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
 
         scene.add(new THREE.HemisphereLight(0x3a4a8a, 0x1a1410, 0.95));
         const sun = new THREE.DirectionalLight(0xff8a5c, 0.65);
         sun.position.set(-12, 8, -6); scene.add(sun);
         scene.add(new THREE.AmbientLight(0x222633, 0.6));
 
-        const ground = new THREE.Mesh(new THREE.CylinderGeometry(21, 21, 0.5, 40), new THREE.MeshLambertMaterial({ color: 0x23262e }));
-        ground.position.y = -0.25; scene.add(ground);
-        const road = new THREE.Mesh(new THREE.RingGeometry(11.5, 16.5, 48), new THREE.MeshLambertMaterial({ color: 0x181a20 }));
-        road.rotation.x = -Math.PI / 2; road.position.y = 0.01; scene.add(road);
-        const plaza = new THREE.Mesh(new THREE.CircleGeometry(4.4, 32), new THREE.MeshLambertMaterial({ color: 0x2b2f3a }));
-        plaza.rotation.x = -Math.PI / 2; plaza.position.y = 0.012; scene.add(plaza);
-        const dashMat = new THREE.MeshBasicMaterial({ color: 0x8890a8 });
-        for (let i = 0; i < 24; i++) {
-            const a = i / 24 * Math.PI * 2;
-            const d = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.16), dashMat);
-            d.rotation.x = -Math.PI / 2; d.rotation.z = -a;
-            d.position.set(Math.cos(a) * 14, 0.02, Math.sin(a) * 14);
-            scene.add(d);
+        const PLANET_R = 12;
+        const planet = new THREE.Mesh(
+            new THREE.SphereGeometry(PLANET_R, 56, 40),
+            new THREE.MeshLambertMaterial({ color: 0x2a3144 })
+        );
+        scene.add(planet);
+        const atmo = new THREE.Mesh(
+            new THREE.SphereGeometry(PLANET_R * 1.045, 40, 28),
+            new THREE.MeshBasicMaterial({ color: 0x7cddff, transparent: true, opacity: 0.07 })
+        );
+        scene.add(atmo);
+        const equatorPts = [];
+        for (let i = 0; i <= 72; i++) {
+            const lon = i / 72 * Math.PI * 2;
+            equatorPts.push(new THREE.Vector3(
+                PLANET_R * Math.sin(lon),
+                0,
+                PLANET_R * Math.cos(lon)
+            ));
+        }
+        scene.add(new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(equatorPts),
+            new THREE.LineBasicMaterial({ color: 0x8890a8, transparent: true, opacity: 0.35 })
+        ));
+        const plaza = new THREE.Mesh(
+            new THREE.CircleGeometry(3.6, 28),
+            new THREE.MeshLambertMaterial({ color: 0x343948 })
+        );
+        plaza.rotation.x = -Math.PI / 2;
+        plaza.position.set(0, PLANET_R + 0.02, 0);
+        scene.add(plaza);
+
+        function planetPos(lon, lat) {
+            const cl = Math.cos(lat);
+            return new THREE.Vector3(
+                PLANET_R * cl * Math.sin(lon),
+                PLANET_R * Math.sin(lat),
+                PLANET_R * cl * Math.cos(lon)
+            );
+        }
+        function planetBasis(lon, lat, up, east, north) {
+            const p = planetPos(lon, lat);
+            up.copy(p).normalize();
+            east.subVectors(planetPos(lon + 0.02, lat), p).normalize();
+            if (east.lengthSq() < 1e-6) east.set(1, 0, 0);
+            north.crossVectors(up, east).normalize();
+        }
+        function projectToTangent(v, up, out) {
+            out.copy(v).addScaledVector(up, -v.dot(up));
+            if (out.lengthSq() < 1e-6) out.set(0, 0, 0);
+            else out.normalize();
+            return out;
+        }
+        function orientOnPlanet(mesh, lon, lat, faceTangent) {
+            const p = planetPos(lon, lat);
+            mesh.position.copy(p);
+            const up = p.clone().normalize();
+            if (faceTangent && faceTangent.lengthSq() > 1e-6) {
+                const m = new THREE.Matrix4();
+                m.lookAt(p, p.clone().add(faceTangent), up);
+                mesh.quaternion.setFromRotationMatrix(m);
+            } else {
+                mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+            }
         }
 
         function signTex(text, color) {
@@ -1050,10 +1101,10 @@
             { id: 'study', kor: 'VIBECODING', sub: 'OPEN - GANGNAM', desc: '현업 게임인끼리 AI 도구 시행착오를 나누는 강남 오프라인 스터디.', color: '#ffd76a', hex: 0x4a3c14, angle: 210, link: 'https://www.somoim.co.kr/17842e1e-0563-4587-9d45-aa12ce04d9df1', actLabel: '참여 문의 (E)' }
         ];
 
-        const R = 14.2;
         SPOTS.forEach(s => {
             const a = s.angle * Math.PI / 180;
-            const x = Math.cos(a) * R, z = Math.sin(a) * R;
+            s.lon = a;
+            s.lat = 0;
             const grp = new THREE.Group();
             const w = s.play ? 2.6 : 3.2;
             const h = s.play ? 3.4 : 2.6 + Math.abs(Math.sin(a * 3)) * 1.6;
@@ -1077,10 +1128,16 @@
             const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.85), signMat);
             sign.position.set(0, h + 0.65, 0.2); grp.add(sign);
             s.signMat = signMat;
-            grp.position.set(x, 0, z);
-            grp.lookAt(0, 0, 0);
+            const surf = planetPos(s.lon, s.lat);
+            grp.position.copy(surf);
+            const sn = surf.clone().normalize();
+            const inward = new THREE.Vector3(-surf.x, 0, -surf.z);
+            if (inward.lengthSq() < 1e-4) inward.set(0, 0, -1);
+            inward.normalize();
+            const bm = new THREE.Matrix4().lookAt(surf, surf.clone().add(inward), sn);
+            grp.quaternion.setFromRotationMatrix(bm);
             scene.add(grp);
-            s.pos = new THREE.Vector3(x, 0, z);
+            s.pos = surf.clone();
             s.keep = Math.max(w, dep) / 2 + 0.9;
         });
 
@@ -1091,8 +1148,9 @@
         visor.position.set(0, 1.06, 0.3); hero.add(visor);
         const blob = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
         blob.rotation.x = -Math.PI / 2; blob.position.y = 0.015; hero.add(blob);
-        hero.position.set(0, 0, 6.5);
+        let heroLon = 0, heroLat = 0;
         scene.add(hero);
+        orientOnPlanet(hero, heroLon, heroLat);
 
         const keys = {};
         const CODE_TO_AXIS = {
@@ -1192,31 +1250,30 @@
 
         const clock = new THREE.Clock();
         const redMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const _up = new THREE.Vector3(0, 1, 0);
         const _viewForward = new THREE.Vector3();
         const _viewRight = new THREE.Vector3();
         const _camTarget = new THREE.Vector3();
+        const _surfUp = new THREE.Vector3();
+        const _surfEast = new THREE.Vector3();
+        const _surfNorth = new THREE.Vector3();
+        const _tangentMove = new THREE.Vector3();
+        const _faceTan = new THREE.Vector3();
+        const _camUp = new THREE.Vector3();
         const MOVE_SPEED = 5.8;
-        const FACE_SPEED = 14;
         const CAM_SPEED = 9;
-        function lerpAngle(from, to, t) {
-            let diff = to - from;
-            while (diff > Math.PI) diff -= 2 * Math.PI;
-            while (diff < -Math.PI) diff += 2 * Math.PI;
-            return from + diff * Math.min(1, t);
-        }
-        function clampHeroPosition() {
-            const r = Math.hypot(hero.position.x, hero.position.z);
-            if (r > 19) {
-                hero.position.x *= 19 / r;
-                hero.position.z *= 19 / r;
-            }
+        const LAT_LIMIT = 0.42;
+        function resolveSpotCollisions() {
+            const hp = planetPos(heroLon, heroLat).normalize();
             for (const s of SPOTS) {
-                const dx = hero.position.x - s.pos.x, dz = hero.position.z - s.pos.z;
-                const d = Math.hypot(dx, dz);
-                if (d < s.keep && d > 0.001) {
-                    hero.position.x = s.pos.x + dx / d * s.keep;
-                    hero.position.z = s.pos.z + dz / d * s.keep;
+                const sp = s.pos.clone().normalize();
+                const ang = Math.acos(Math.max(-1, Math.min(1, hp.dot(sp))));
+                const surfDist = ang * PLANET_R;
+                if (surfDist < s.keep && surfDist > 0.001) {
+                    let dLon = heroLon - s.lon;
+                    while (dLon > Math.PI) dLon -= 2 * Math.PI;
+                    while (dLon < -Math.PI) dLon += 2 * Math.PI;
+                    const sign = dLon === 0 ? 1 : Math.sign(dLon);
+                    heroLon += sign * ((s.keep - surfDist) / PLANET_R) * 1.1;
                 }
             }
         }
@@ -1225,42 +1282,48 @@
             const forwardInput = (keys.up ? 1 : 0) - (keys.down ? 1 : 0) - jv.z;
             const strafeInput = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
             const inputMag = Math.hypot(forwardInput, strafeInput);
+            planetBasis(heroLon, heroLat, _surfUp, _surfEast, _surfNorth);
             if (inputMag > 0.05) {
                 camera.updateMatrixWorld();
                 _viewRight.setFromMatrixColumn(camera.matrixWorld, 0);
                 _viewRight.y = 0;
-                if (_viewRight.lengthSq() < 1e-4) _viewRight.set(1, 0, 0);
+                if (_viewRight.lengthSq() < 1e-4) _viewRight.copy(_surfEast);
                 else _viewRight.normalize();
                 _viewForward.setFromMatrixColumn(camera.matrixWorld, 2).multiplyScalar(-1);
                 _viewForward.y = 0;
-                if (_viewForward.lengthSq() < 1e-4) {
-                    _viewForward.set(-Math.sin(hero.rotation.y), 0, -Math.cos(hero.rotation.y));
-                } else {
-                    _viewForward.normalize();
-                }
-                const moveX = _viewForward.x * forwardInput + _viewRight.x * strafeInput;
-                const moveZ = _viewForward.z * forwardInput + _viewRight.z * strafeInput;
-                const moveLen = Math.hypot(moveX, moveZ);
-                if (moveLen > 0.001) {
-                    const nx = moveX / moveLen;
-                    const nz = moveZ / moveLen;
-                    hero.position.x += nx * MOVE_SPEED * dt;
-                    hero.position.z += nz * MOVE_SPEED * dt;
-                    hero.rotation.y = lerpAngle(hero.rotation.y, Math.atan2(nx, nz), 1 - Math.exp(-FACE_SPEED * dt));
-                    clampHeroPosition();
+                if (_viewForward.lengthSq() < 1e-4) projectToTangent(_surfNorth, _surfUp, _viewForward);
+                else projectToTangent(_viewForward, _surfUp, _viewForward);
+                projectToTangent(_viewRight, _surfUp, _viewRight);
+                _tangentMove.set(0, 0, 0)
+                    .addScaledVector(_viewForward, forwardInput)
+                    .addScaledVector(_viewRight, strafeInput);
+                if (_tangentMove.lengthSq() > 1e-5) {
+                    _tangentMove.normalize();
+                    const step = MOVE_SPEED * dt;
+                    heroLon += _tangentMove.dot(_surfEast) * step / (PLANET_R * Math.max(0.35, Math.cos(heroLat)));
+                    heroLat = Math.max(-LAT_LIMIT, Math.min(LAT_LIMIT, heroLat + _tangentMove.dot(_surfNorth) * step / PLANET_R));
+                    if (forwardInput < -0.01) _faceTan.copy(_viewForward);
+                    else if (forwardInput > 0.01) _faceTan.copy(_tangentMove);
+                    else _faceTan.copy(_viewForward);
+                    projectToTangent(_faceTan, _surfUp, _faceTan);
+                    orientOnPlanet(hero, heroLon, heroLat, _faceTan);
+                    resolveSpotCollisions();
                     heroBody.position.y = 0.75 + (redMotion ? 0 : Math.abs(Math.sin(performance.now() / 130)) * 0.07);
                 }
+            } else {
+                orientOnPlanet(hero, heroLon, heroLat);
             }
-            const camYaw = hero.rotation.y;
-            const camDist = 6.5;
-            const camHeight = 3.8;
-            _camTarget.set(
-                hero.position.x - Math.sin(camYaw) * camDist,
-                hero.position.y + camHeight,
-                hero.position.z - Math.cos(camYaw) * camDist
-            );
+            planetBasis(heroLon, heroLat, _surfUp, _surfEast, _surfNorth);
+            const hp = planetPos(heroLon, heroLat);
+            _faceTan.set(0, 0, 1).applyQuaternion(hero.quaternion);
+            projectToTangent(_faceTan, _surfUp, _faceTan);
+            if (_faceTan.lengthSq() < 1e-6) _faceTan.copy(_surfNorth);
+            _camTarget.copy(hp)
+                .addScaledVector(_faceTan, -6.5)
+                .addScaledVector(_surfUp, 3.2);
             camera.position.lerp(_camTarget, 1 - Math.exp(-CAM_SPEED * dt));
-            camera.lookAt(hero.position.x, hero.position.y + 1.25, hero.position.z);
+            _camUp.copy(hp).normalize();
+            camera.lookAt(hp.x + _camUp.x * 1.25, hp.y + _camUp.y * 1.25, hp.z + _camUp.z * 1.25);
             if (!redMotion) {
                 const t = performance.now();
                 SPOTS.forEach((s, i) => { s.signMat.opacity = 0.86 + Math.sin(t / 90 + i * 7) * 0.06; });
@@ -1273,13 +1336,16 @@
         function enterVillage() {
             document.body.classList.add('in-village');
             panel.classList.remove('show'); nearSpot = null;
-            const yaw = hero.rotation.y;
-            camera.position.set(
-                hero.position.x - Math.sin(yaw) * 6.5,
-                hero.position.y + 3.8,
-                hero.position.z - Math.cos(yaw) * 6.5
-            );
-            camera.lookAt(hero.position.x, hero.position.y + 1.25, hero.position.z);
+            planetBasis(heroLon, heroLat, _surfUp, _surfEast, _surfNorth);
+            const hp = planetPos(heroLon, heroLat);
+            orientOnPlanet(hero, heroLon, heroLat);
+            _faceTan.set(0, 0, 1).applyQuaternion(hero.quaternion);
+            projectToTangent(_faceTan, _surfUp, _faceTan);
+            if (_faceTan.lengthSq() < 1e-6) _faceTan.copy(_surfNorth);
+            _camTarget.copy(hp).addScaledVector(_faceTan, -6.5).addScaledVector(_surfUp, 3.2);
+            camera.position.copy(_camTarget);
+            _camUp.copy(hp).normalize();
+            camera.lookAt(hp.x + _camUp.x * 1.25, hp.y + _camUp.y * 1.25, hp.z + _camUp.z * 1.25);
             startLoop();
             renderer.domElement.focus({ preventScroll: true });
         }
