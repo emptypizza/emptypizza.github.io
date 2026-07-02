@@ -1003,6 +1003,8 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.setSize(window.innerWidth, window.innerHeight);
         wrap.appendChild(renderer.domElement);
+        renderer.domElement.tabIndex = 0;
+        renderer.domElement.setAttribute('aria-label', '3D 마을 이동 영역');
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x10142a);
@@ -1093,12 +1095,38 @@
         scene.add(hero);
 
         const keys = {};
+        const CODE_TO_AXIS = {
+            KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
+            ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right'
+        };
+        function setAxisFromCode(code, pressed) {
+            const axis = CODE_TO_AXIS[code];
+            if (!axis) return false;
+            keys[axis] = pressed;
+            return true;
+        }
         addEventListener('keydown', e => {
-            if (!document.body.classList.contains('in-village')) return;
-            keys[e.key.toLowerCase()] = true;
-            if (e.key.toLowerCase() === 'e') doAction();
+            const inVillage = document.body.classList.contains('in-village');
+            if (e.isComposing) return;
+            if (setAxisFromCode(e.code, true)) {
+                if (inVillage) e.preventDefault();
+                return;
+            }
+            if (!inVillage) return;
+            if (e.code === 'KeyE') {
+                e.preventDefault();
+                doAction();
+            }
+        }, true);
+        addEventListener('keyup', e => {
+            const inVillage = document.body.classList.contains('in-village');
+            if (setAxisFromCode(e.code, false)) {
+                if (inVillage) e.preventDefault();
+            }
+        }, true);
+        addEventListener('blur', () => {
+            keys.up = keys.down = keys.left = keys.right = false;
         });
-        addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
         const joy = document.getElementById('v-joy'), stick = document.getElementById('v-stick');
         let jv = { x: 0, z: 0 }, jid = null;
@@ -1125,6 +1153,7 @@
         function pauseInlineGame() { try { clearAllTimers(); isPlaying = false; } catch (e) {} }
         function leaveVillage(toPlay) {
             stopLoop();
+            keys.up = keys.down = keys.left = keys.right = false;
             document.body.classList.remove('in-village');
             try { initStage(0); } catch (e) {}
             if (toPlay) {
@@ -1165,8 +1194,8 @@
         const redMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
         function tick() {
             const dt = Math.min(clock.getDelta(), 0.05);
-            let mx = ((keys['d'] || keys['arrowright']) ? 1 : 0) - ((keys['a'] || keys['arrowleft']) ? 1 : 0) + jv.x;
-            let mz = ((keys['s'] || keys['arrowdown']) ? 1 : 0) - ((keys['w'] || keys['arrowup']) ? 1 : 0) + jv.z;
+            let mx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
+            let mz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + jv.z;
             const m = Math.hypot(mx, mz);
             if (m > 0.01) {
                 mx /= Math.max(m, 1); mz /= Math.max(m, 1);
@@ -1203,6 +1232,7 @@
             panel.classList.remove('show'); nearSpot = null;
             camera.position.set(hero.position.x, 5, hero.position.z + 8);
             startLoop();
+            renderer.domElement.focus({ preventScroll: true });
         }
         addEventListener('resize', () => {
             camera.aspect = innerWidth / innerHeight;
