@@ -459,6 +459,7 @@
         #village-screen { display: none; position: fixed; inset: 0; z-index: 40; background: linear-gradient(180deg, #9fd3d4 0%, #f7e6c6 100%); }
         body.in-village #village-screen { display: block; }
         #village-canvas-wrap, #village-canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #v-fade { position: absolute; inset: 0; background: #04050c; opacity: 0; pointer-events: none; z-index: 35; }
         .v-chip { position: absolute; background: rgba(249,241,222,0.94); border: 1.5px solid rgba(58,47,34,0.25); border-radius: 14px; box-shadow: 0 3px 14px rgba(58,47,34,0.18); color: #3a2f22; font-family: 'Segoe UI', 'Apple SD Gothic Neo', system-ui, sans-serif; }
         .v-brand { top: 12px; left: 14px; padding: 9px 14px; font-weight: 800; letter-spacing: 0.09em; font-size: 0.88rem; z-index: 20; pointer-events: none; }
         .v-brand small { display: block; color: #6b5c48; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; margin-top: 2px; }
@@ -577,6 +578,7 @@
     <!-- ================= ISLAND : 지브리풍 작은 행성 (라이브 페이지 오버레이) ================= -->
     <div id="village-screen">
         <div id="village-canvas-wrap"></div>
+        <div id="v-fade"></div>
         <div class="v-chip v-brand">GGHF ISLAND<small>작은 행성 &middot; 오락실 지구 &middot; 최경환</small></div>
         <button class="v-chip v-menu" id="v-menu" type="button">허브 페이지 &#8599;</button>
         <div class="v-chip v-hint">이동 WASD/방향키 &middot; 상호작용 E &middot; 간판에 다가가 보세요</div>
@@ -1046,11 +1048,13 @@ try {
     grad.needsUpdate = true;
     const toon = (color, opts = {}) => new THREE.MeshToonMaterial({ color, gradientMap: grad, ...opts });
 
-    scene.add(new THREE.HemisphereLight(0xd8f2e6, 0xc9b28e, 0.7));
+    const hemiL = new THREE.HemisphereLight(0xd8f2e6, 0xc9b28e, 0.7);
+    scene.add(hemiL);
     const sun = new THREE.DirectionalLight(0xffe9c4, 1.2);
     sun.position.set(-16, 20, 10);
     scene.add(sun);
-    scene.add(new THREE.AmbientLight(0xfff4e0, 0.32));
+    const ambL = new THREE.AmbientLight(0xfff4e0, 0.32);
+    scene.add(ambL);
 
     function wrapLon(lon) {
         while (lon > Math.PI) lon -= 2 * Math.PI;
@@ -1311,6 +1315,7 @@ try {
         sunSpr.position.set(-120, 130, 70);
         sunSpr.scale.setScalar(70);
         scene.add(sunSpr);
+        return { sky, sunSpr };
     }
 
     const D2R = Math.PI / 180;
@@ -1331,7 +1336,10 @@ try {
           desc: '한 줄 라인 디펜스. 종이 영웅들이 성을 지킨다.', badge: 'PROTOTYPE — 재미 검증 중', kind: 'cottage', roof: 0x4a5286, banner: true },
         { id: 'study', kor: 'VIBECODING',   sub: 'OPEN - GANGNAM', lon: -150 * D2R, side: -1, color: '#b98f2f',
           desc: '현업 게임인끼리 AI 도구 시행착오를 나누는 강남 오프라인 스터디.',
-          link: 'https://www.somoim.co.kr/17842e1e-0563-4587-9d45-aa12ce04d9df1', actLabel: '참여 문의 (E)', kind: 'cafe', roof: 0xb99341 }
+          link: 'https://www.somoim.co.kr/17842e1e-0563-4587-9d45-aa12ce04d9df1', actLabel: '참여 문의 (E)', kind: 'cafe', roof: 0xb99341 },
+        { id: 'rocket', kor: 'LAUNCH PAD', sub: 'DAY - SPACE', lon: 60 * D2R, side: -1, color: '#8be9fd',
+          desc: '우주 발사대. E를 누르면 로켓을 타고 반대편 세계로 — 낮의 섬과 검은 우주를 오갑니다.',
+          actLabel: '발사 (E)', kind: 'rocket', launch: true }
     ];
 
     const planet = new THREE.Mesh(new THREE.SphereGeometry(R, 128, 96), toon(0xffffff, { map: paintPlanet() }));
@@ -1343,7 +1351,7 @@ try {
     );
     scene.add(shimmer);
 
-    makeSky();
+    const skyRefs = makeSky();
 
     const plasterTex = paintPlaster();
     const colliders = [];
@@ -1378,6 +1386,37 @@ try {
         return tex;
     }
 
+    // 밤(우주) 모드용 네온 간판
+    function signTextureNeon(text, accent) {
+        const c = document.createElement('canvas');
+        c.width = 512; c.height = 160;
+        const g = c.getContext('2d');
+        g.fillStyle = '#0a0c16';
+        g.beginPath();
+        g.roundRect(0, 0, 512, 160, 20);
+        g.fill();
+        g.strokeStyle = accent;
+        g.globalAlpha = 0.7;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.roundRect(9, 9, 494, 142, 14);
+        g.stroke();
+        g.globalAlpha = 1;
+        g.font = 'bold 57px "Trebuchet MS", sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.shadowColor = accent;
+        g.shadowBlur = 28;
+        g.fillStyle = accent;
+        g.fillText(text, 256, 78);
+        g.shadowBlur = 10;
+        g.fillStyle = '#f0ffff';
+        g.fillText(text, 256, 78);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return tex;
+    }
+
     function makeSign(spot) {
         const grp = new THREE.Group();
         const postMat = toon(C.woodDark);
@@ -1386,14 +1425,17 @@ try {
             post.position.set(x, 0.92, 0);
             grp.add(post);
         });
+        spot.dayTex = signTexture(spot.kor, spot.color);
+        spot.nightTex = signTextureNeon(spot.kor, spot.color);
         const board = new THREE.Mesh(
             new THREE.PlaneGeometry(2.75, 0.85),
-            new THREE.MeshBasicMaterial({ map: signTexture(spot.kor, spot.color), side: THREE.DoubleSide })
+            new THREE.MeshBasicMaterial({ map: spot.dayTex, side: THREE.DoubleSide })
         );
         board.position.y = 1.5;
         board.rotation.y = Math.PI;
         grp.add(board);
         swaySigns.push(board);
+        spot.signBoard = board;
         return grp;
     }
 
@@ -1551,6 +1593,62 @@ try {
         return built;
     }
 
+    /* ---------- 우주 발사대 + 로켓 ---------- */
+    let rocketParts = null;
+    function buildRocketPad() {
+        const grp = new THREE.Group();
+        const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.5, 0.22, 20), toon(0x8d94a0));
+        pad.position.y = 0.11;
+        grp.add(pad);
+        const ring = new THREE.Mesh(new THREE.CylinderGeometry(1.36, 1.36, 0.06, 20), toon(0xd9b968));
+        ring.position.y = 0.23;
+        grp.add(ring);
+        // 정비탑
+        const towerMat = toon(0x5f6672);
+        [[1.15, 0.25], [1.45, -0.15]].forEach(([x, z]) => {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 3.1, 0.09), towerMat);
+            leg.position.set(x, 1.55, z);
+            grp.add(leg);
+        });
+        [1.1, 2.2, 3.0].forEach(y => {
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.55), towerMat);
+            bar.position.set(1.3, y, 0.05);
+            bar.rotation.y = 0.35;
+            grp.add(bar);
+        });
+        // 로켓
+        const ship = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 1.9, 14), toon(0xf3ead6));
+        body.position.y = 1.2;
+        ship.add(body);
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.43, 0.85, 14), toon(0xc0392b));
+        nose.position.y = 2.57;
+        ship.add(nose);
+        for (let i = 0; i < 3; i++) {
+            const a = i * Math.PI * 2 / 3;
+            const fin = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.78, 0.42), toon(0xc0392b));
+            fin.position.set(Math.sin(a) * 0.52, 0.55, Math.cos(a) * 0.52);
+            fin.rotation.y = a;
+            ship.add(fin);
+        }
+        const winRing = new THREE.Mesh(new THREE.CircleGeometry(0.17, 14), toon(0x8d94a0));
+        winRing.position.set(0, 1.5, -0.485);
+        winRing.rotation.y = Math.PI;
+        ship.add(winRing);
+        const winGlass = new THREE.Mesh(new THREE.CircleGeometry(0.12, 14), new THREE.MeshBasicMaterial({ color: 0x9fe8ff }));
+        winGlass.position.set(0, 1.5, -0.5);
+        winGlass.rotation.y = Math.PI;
+        ship.add(winGlass);
+        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.95, 10), new THREE.MeshBasicMaterial({ color: 0xffb347 }));
+        flame.rotation.x = Math.PI;
+        flame.position.y = -0.28;
+        flame.visible = false;
+        ship.add(flame);
+        ship.position.y = 0.22;
+        grp.add(ship);
+        return { grp, keep: 1.9, ship, flame };
+    }
+
     const _east = new THREE.Vector3(), _north = new THREE.Vector3(), _up = new THREE.Vector3(), _face = new THREE.Vector3();
 
     SPOT_DEFS.forEach(s => {
@@ -1559,12 +1657,16 @@ try {
         if (s.kind === 'arcade') built = buildArcade();
         else if (s.kind === 'villa') built = buildVilla();
         else if (s.kind === 'cafe') built = buildCafe(s);
+        else if (s.kind === 'rocket') built = buildRocketPad();
         else built = buildCottage(s);
 
         planetBasis(s.lon, s.lat, _up, _east, _north);
         _face.copy(_north).multiplyScalar(-s.side);
         orientOnPlanet(built.grp, s.lon, s.lat, _face);
         scene.add(built.grp);
+        if (s.kind === 'rocket') {
+            rocketParts = { ship: built.ship, flame: built.flame, baseY: built.ship.position.y, padPos: built.grp.position.clone() };
+        }
 
         const sign = makeSign(s);
         const signLat = s.side * 0.058;
@@ -1828,6 +1930,59 @@ try {
         cloudPivots.push({ pivot, speed: rand(0.008, 0.022) * (Math.random() < 0.5 ? 1 : -1) });
     }
 
+    /* ---------- 우주 테마 (검은 하늘 + 별 + 네온) ---------- */
+    scene.background = new THREE.Color(0x04050c);
+    const starVerts = [];
+    for (let i = 0; i < 460; i++) {
+        const u = Math.random(), v = Math.random();
+        const th = 2 * Math.PI * u, ph = Math.acos(2 * v - 1);
+        const sr = 100 + Math.random() * 60;
+        starVerts.push(sr * Math.sin(ph) * Math.cos(th), sr * Math.sin(ph) * Math.sin(th), sr * Math.cos(ph));
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xc8d8ff, size: 0.4, sizeAttenuation: true, transparent: true, opacity: 0.9 }));
+    stars.visible = false;
+    scene.add(stars);
+    const atmo = new THREE.Mesh(
+        new THREE.SphereGeometry(R * 1.06, 32, 20),
+        new THREE.MeshBasicMaterial({ color: 0x7cc8ff, transparent: true, opacity: 0.07, depthWrite: false })
+    );
+    atmo.visible = false;
+    scene.add(atmo);
+
+    let isSpace = false;
+    function applyTheme(space) {
+        isSpace = space;
+        skyRefs.sky.visible = !space;
+        skyRefs.sunSpr.visible = !space;
+        stars.visible = space;
+        atmo.visible = space;
+        shimmer.visible = !space;
+        cloudPivots.forEach(c => { c.pivot.visible = !space; });
+        planet.material.color.set(space ? 0x525f78 : 0xffffff);
+        hemiL.color.set(space ? 0x3a4a8a : 0xd8f2e6);
+        hemiL.groundColor.set(space ? 0x1a1626 : 0xc9b28e);
+        hemiL.intensity = space ? 0.55 : 0.7;
+        sun.color.set(space ? 0x9fb4ff : 0xffe9c4);
+        sun.intensity = space ? 0.55 : 1.2;
+        ambL.color.set(space ? 0x2a3050 : 0xfff4e0);
+        ambL.intensity = space ? 0.5 : 0.32;
+        SPOT_DEFS.forEach(s => {
+            if (s.signBoard) {
+                s.signBoard.material.map = space ? s.nightTex : s.dayTex;
+                s.signBoard.material.needsUpdate = true;
+            }
+        });
+    }
+
+    /* ---------- 로켓 발사 시퀀스 ---------- */
+    let launchAnim = null;
+    function startLaunch() {
+        if (launchAnim || !rocketParts) return;
+        launchAnim = { t: 0, swapped: false };
+    }
+
     const hero = new THREE.Group();
     const bodyGrp = new THREE.Group();
     hero.add(bodyGrp);
@@ -1915,15 +2070,17 @@ try {
     }
     let puffIdx = 0;
     const _puffUp = new THREE.Vector3(), _puffAxis = new THREE.Vector3(0, 0, 1);
-    function spawnPuff() {
+    function spawnPuffAt(pos, s0 = 0.14) {
         const p = puffs[puffIdx];
         puffIdx = (puffIdx + 1) % puffs.length;
         p.life = 0.45;
+        p.s0 = s0;
         p.m.visible = true;
-        _puffUp.copy(hero.position).normalize();
-        p.m.position.copy(hero.position).addScaledVector(_puffUp, 0.035);
+        _puffUp.copy(pos).normalize();
+        p.m.position.copy(pos).addScaledVector(_puffUp, 0.035);
         p.m.quaternion.setFromUnitVectors(_puffAxis, _puffUp);
     }
+    function spawnPuff() { spawnPuffAt(hero.position, 0.14); }
 
     let heroLon = -60 * D2R, heroLat = 0.0, heading = Math.PI / 2;
     let walkBlend = 0, walkPhase = 0, prevStep = 0;
@@ -1970,6 +2127,7 @@ try {
     const panel = document.getElementById('v-panel');
     const pAct = document.getElementById('v-act');
     const btnE = document.getElementById('v-int');
+    const fadeEl = document.getElementById('v-fade');
     let nearSpot = null;
 
     function pauseInlineGame() { try { clearAllTimers(); isPlaying = false; } catch (e) {} }
@@ -1999,7 +2157,8 @@ try {
     }
     function doAction() {
         if (!nearSpot || !document.body.classList.contains('in-village')) return;
-        if (nearSpot.play) leaveVillage(true);
+        if (nearSpot.launch) startLaunch();
+        else if (nearSpot.play) leaveVillage(true);
         else if (nearSpot.link) window.open(nearSpot.link, '_blank', 'noopener');
     }
     pAct.onclick = doAction;
@@ -2079,6 +2238,11 @@ try {
         _camS.lerp(_camT, k);
         _lookS.lerp(_lookT, k);
         camera.position.copy(_camS);
+        if (launchAnim && launchAnim.t < 1.3) {
+            const sh = 0.07 * (1 - launchAnim.t / 1.5);
+            camera.position.x += (Math.random() - 0.5) * sh;
+            camera.position.y += (Math.random() - 0.5) * sh;
+        }
         orientCamera(_camS, _lookS, _sUp, _sEast);
     }
 
@@ -2107,10 +2271,37 @@ try {
         const dt = Math.min(clock.getDelta(), 0.05);
         const t = performance.now() / 1000;
 
+        // 로켓 발사 시퀀스 (이륙 → 페이드 → 세계 전환 → 착륙)
+        if (launchAnim && rocketParts) {
+            const T = (launchAnim.t += dt);
+            const r = rocketParts;
+            const lift = T < 1 ? T * T * 9 : Math.max(0, 2 - T) ** 2 * 9;
+            r.ship.position.y = r.baseY + lift;
+            r.flame.visible = lift > 0.03 && T < 1.95;
+            if (r.flame.visible) r.flame.scale.set(1, 0.75 + Math.random() * 0.5, 1);
+            hero.visible = !(T > 0.05 && T < 1.95);
+            if (T < 1 && Math.random() < 0.55) spawnPuffAt(r.padPos, 0.42);
+            fadeEl.style.opacity = T < 1
+                ? Math.min(1, Math.max(0, (T - 0.5) / 0.4))
+                : Math.min(1, Math.max(0, (1.55 - T) / 0.55));
+            if (T >= 1 && !launchAnim.swapped) {
+                launchAnim.swapped = true;
+                applyTheme(!isSpace);
+            }
+            if (T >= 2.1) {
+                launchAnim = null;
+                r.ship.position.y = r.baseY;
+                r.flame.visible = false;
+                fadeEl.style.opacity = 0;
+                hero.visible = true;
+            }
+        }
+
         const inX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
         const inY = (keys.up ? 1 : 0) - (keys.down ? 1 : 0) - jv.z;
         let mag = Math.hypot(inX, inY);
         if (mag > 1) mag = 1;
+        if (launchAnim) mag = 0;
 
         planetBasis(heroLon, heroLat, _sUp, _sEast, _sNorth);
 
@@ -2167,7 +2358,8 @@ try {
             if (p.life > 0) {
                 p.life -= dt;
                 const k = Math.max(0, p.life / 0.45);
-                p.m.scale.setScalar(0.14 + (1 - k) * 0.34);
+                const s0 = p.s0 || 0.14;
+                p.m.scale.setScalar(s0 + (1 - k) * s0 * 2.4);
                 p.m.material.opacity = k * 0.5;
                 if (p.life <= 0) p.m.visible = false;
             }
@@ -2186,6 +2378,8 @@ try {
 
     window.render_game_to_text = () => JSON.stringify({
         mode: document.body.classList.contains('in-village') ? 'village' : 'page',
+        space: isSpace,
+        launching: !!launchAnim,
         lon: +heroLon.toFixed(3), lat: +heroLat.toFixed(3), heading: +heading.toFixed(3),
         nearSpot: nearSpot ? nearSpot.id : null,
         calls: renderer.info.render.calls, tris: renderer.info.render.triangles
