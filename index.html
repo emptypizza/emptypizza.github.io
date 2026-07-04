@@ -1947,6 +1947,142 @@ try {
     const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xc8d8ff, size: 0.4, sizeAttenuation: true, transparent: true, opacity: 0.9 }));
     stars.visible = false;
     scene.add(stars);
+
+    /* ---------- 별자리 (실제 J2000 적경/적위 고증) ---------- */
+    // 별: [적경(시), 적위(도), 겉보기등급, 분광형색]  · 선: 별 인덱스 쌍
+    const B = '#b7c8ff', BW = '#dbe4ff', W = '#f6f6ff', Y = '#fff4e8', O = '#ffd6a8', RED = '#ffb08a';
+    const CONSTELLATIONS = [
+        { ko: '오리온자리', en: 'ORION', stars: [
+            [5.919, 7.407, 0.42, RED], [5.242, -8.202, 0.18, B], [5.418, 6.350, 1.64, B], [5.533, -0.299, 2.25, B],
+            [5.604, -1.202, 1.69, B], [5.679, -1.943, 1.77, B], [5.796, -9.670, 2.06, B], [5.585, 9.934, 3.39, BW]],
+          lines: [[0,2],[0,7],[2,7],[0,5],[2,3],[3,4],[4,5],[5,6],[3,1]] },
+        { ko: '북두칠성', en: 'BIG DIPPER', stars: [
+            [11.062, 61.751, 1.79, O], [11.031, 56.383, 2.37, BW], [11.897, 53.695, 2.44, BW], [12.257, 57.033, 3.31, BW],
+            [12.900, 55.960, 1.77, BW], [13.399, 54.925, 2.23, BW], [13.792, 49.313, 1.86, B]],
+          lines: [[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]] },
+        { ko: '카시오페이아자리', en: 'CASSIOPEIA', stars: [
+            [0.153, 59.150, 2.28, W], [0.675, 56.537, 2.24, O], [0.945, 60.717, 2.15, B], [1.430, 60.235, 2.68, BW], [1.907, 63.670, 3.35, BW]],
+          lines: [[0,1],[1,2],[2,3],[3,4]] },
+        { ko: '백조자리', en: 'CYGNUS', stars: [
+            [20.690, 45.280, 1.25, BW], [20.371, 40.257, 2.23, W], [20.770, 33.970, 2.48, O], [19.750, 45.131, 2.87, BW], [19.512, 27.960, 3.05, O]],
+          lines: [[0,1],[1,4],[3,1],[1,2]] },
+        { ko: '거문고자리', en: 'LYRA', stars: [
+            [18.615, 38.784, 0.03, BW], [18.835, 33.363, 3.52, BW], [18.982, 32.690, 3.25, BW], [18.908, 36.899, 4.20, BW], [18.746, 37.605, 4.30, BW]],
+          lines: [[0,4],[0,3],[4,1],[1,2],[2,3],[3,4]] },
+        { ko: '전갈자리', en: 'SCORPIUS', stars: [
+            [16.490, -26.432, 1.06, RED], [16.090, -19.805, 2.62, B], [16.006, -22.622, 2.29, B], [15.981, -26.114, 2.89, BW],
+            [16.353, -25.593, 2.88, BW], [16.598, -28.216, 2.82, BW], [16.836, -34.293, 2.29, O], [16.865, -38.048, 3.00, BW],
+            [16.910, -42.362, 3.60, O], [17.203, -43.239, 3.33, W], [17.622, -42.998, 1.87, W], [17.793, -40.127, 3.03, W],
+            [17.708, -39.030, 2.39, BW], [17.560, -37.104, 1.62, B], [17.512, -37.296, 2.69, BW]],
+          lines: [[1,2],[2,3],[3,0],[0,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14]] },
+        { ko: '작은곰자리', en: 'URSA MINOR', stars: [
+            [2.530, 89.264, 1.98, Y], [14.845, 74.156, 2.08, O], [15.345, 71.834, 3.05, BW], [16.292, 75.755, 4.95, BW],
+            [15.734, 77.794, 4.32, BW], [16.766, 82.037, 4.21, BW], [17.537, 86.586, 4.36, BW]],
+          lines: [[0,6],[6,5],[5,4],[4,3],[3,1],[1,2],[2,4]] },
+        { ko: '큰개자리', en: 'CANIS MAJOR', stars: [
+            [6.752, -16.716, -1.46, BW], [6.378, -17.956, 1.98, B], [7.140, -26.393, 1.83, W], [6.977, -28.972, 1.50, B],
+            [7.402, -29.303, 2.45, BW], [6.338, -30.063, 3.02, BW]],
+          lines: [[0,1],[0,2],[2,3],[3,5],[2,4]] },
+        { ko: '사자자리', en: 'LEO', stars: [
+            [10.140, 11.967, 1.35, B], [11.818, 14.572, 2.11, BW], [10.333, 19.842, 2.08, O], [11.235, 20.524, 2.56, BW],
+            [11.237, 15.430, 3.32, BW], [10.122, 16.763, 3.48, BW], [10.278, 23.417, 3.44, BW], [9.764, 23.774, 2.98, Y]],
+          lines: [[0,5],[5,2],[2,6],[6,7],[0,4],[4,1],[1,3],[3,2]] },
+        { ko: '남십자자리', en: 'CRUX', stars: [
+            [12.443, -63.099, 0.77, B], [12.795, -59.689, 1.25, B], [12.520, -57.113, 1.63, RED], [12.252, -58.749, 2.79, BW], [12.356, -60.401, 3.59, O]],
+          lines: [[0,2],[1,3]] },
+        { ko: '황소자리', en: 'TAURUS', stars: [
+            [4.599, 16.509, 0.85, '#ffb367'], [5.438, 28.608, 1.65, B], [4.477, 15.871, 3.40, O], [4.330, 15.628, 3.65, O],
+            [4.478, 19.180, 3.53, BW], [5.627, 21.143, 3.00, B]],
+          lines: [[3,2],[2,0],[0,4],[4,3],[4,1],[0,5]] },
+        { ko: '쌍둥이자리', en: 'GEMINI', stars: [
+            [7.755, 28.026, 1.14, O], [7.577, 31.888, 1.58, BW], [6.629, 16.399, 1.93, BW], [7.335, 21.982, 3.53, W],
+            [6.732, 25.131, 3.06, Y], [7.068, 20.570, 3.90, W], [6.383, 22.514, 2.87, RED], [6.248, 22.507, 3.30, O]],
+          lines: [[1,4],[4,6],[6,7],[0,3],[3,5],[1,0]] }
+    ];
+
+    const RSKY = 138;
+    function raDecToVec(ra, dec) {
+        const raR = ra / 24 * Math.PI * 2, decR = dec * Math.PI / 180, cd = Math.cos(decR);
+        return [RSKY * cd * Math.cos(raR), RSKY * Math.sin(decR), RSKY * cd * Math.sin(raR)];
+    }
+    function constLabel(text) {
+        const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+        const g = c.getContext('2d');
+        g.font = 'bold 30px "Apple SD Gothic Neo", "Trebuchet MS", sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillStyle = 'rgba(170,195,255,0.95)';
+        g.fillText(text, 128, 34);
+        const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+        const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.5, depthWrite: false }));
+        spr.scale.set(16, 4, 1);
+        return spr;
+    }
+    const constGroup = new THREE.Group();
+    (() => {
+        const sPos = [], sSize = [], sCol = [], lPos = [], _c = new THREE.Color();
+        CONSTELLATIONS.forEach(con => {
+            const pts = con.stars.map(s => raDecToVec(s[0], s[1]));
+            pts.forEach((p, i) => {
+                sPos.push(p[0], p[1], p[2]);
+                const mag = con.stars[i][2];
+                sSize.push(Math.max(1.6, 7 - mag * 1.4));
+                _c.set(con.stars[i][3] || BW); sCol.push(_c.r, _c.g, _c.b);
+            });
+            (con.lines || []).forEach(([a, b]) => { lPos.push(pts[a][0], pts[a][1], pts[a][2], pts[b][0], pts[b][1], pts[b][2]); });
+            const cen = pts.reduce((a, p) => [a[0] + p[0], a[1] + p[1], a[2] + p[2]], [0, 0, 0]).map(v => v / pts.length);
+            const lab = constLabel(con.ko);
+            lab.position.set(cen[0], cen[1], cen[2]).multiplyScalar(1.05);
+            constGroup.add(lab);
+        });
+        const sg = new THREE.BufferGeometry();
+        sg.setAttribute('position', new THREE.Float32BufferAttribute(sPos, 3));
+        sg.setAttribute('aSize', new THREE.Float32BufferAttribute(sSize, 1));
+        sg.setAttribute('aColor', new THREE.Float32BufferAttribute(sCol, 3));
+        const sMat = new THREE.ShaderMaterial({
+            transparent: true, depthWrite: false,
+            vertexShader: 'attribute float aSize; attribute vec3 aColor; varying vec3 vC; void main(){ vC=aColor; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=aSize*(320.0/-mv.z); gl_Position=projectionMatrix*mv; }',
+            fragmentShader: 'varying vec3 vC; void main(){ float d=length(gl_PointCoord-vec2(0.5)); if(d>0.5) discard; float a=smoothstep(0.5,0.08,d); gl_FragColor=vec4(vC,a); }'
+        });
+        constGroup.add(new THREE.Points(sg, sMat));
+        const lg = new THREE.BufferGeometry();
+        lg.setAttribute('position', new THREE.Float32BufferAttribute(lPos, 3));
+        constGroup.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x6f86c9, transparent: true, opacity: 0.32, depthWrite: false })));
+    })();
+
+    /* ---------- 딥스카이 (성운·성단·은하) — 실제 위치 고증 ---------- */
+    const DEEPSKY = [
+        { ko: '오리온 대성운', ra: 5.588, dec: -5.39, color: 0xff9bb5, sx: 7.5, sy: 6, op: 0.8 },   // M42
+        { ko: '플레이아데스', ra: 3.791, dec: 24.105, color: 0xbcd4ff, sx: 6, sy: 6, op: 0.7 },      // M45
+        { ko: '안드로메다 은하', ra: 0.712, dec: 41.269, color: 0xece7d6, sx: 12, sy: 4.5, op: 0.62 }, // M31
+        { ko: '프레세페 성단', ra: 8.670, dec: 19.621, color: 0xd8e4ff, sx: 5, sy: 5, op: 0.55 },     // M44
+        { ko: '헤르쿨레스 성단', ra: 16.695, dec: 36.460, color: 0xece4ca, sx: 4.5, sy: 4.5, op: 0.55 }, // M13
+        { ko: '석호성운', ra: 18.060, dec: -24.38, color: 0xff9bb0, sx: 6, sy: 5, op: 0.65 }          // M8
+    ];
+    const glowTex = (() => {
+        const c = document.createElement('canvas'); c.width = c.height = 64;
+        const g = c.getContext('2d');
+        const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grd.addColorStop(0, 'rgba(255,255,255,1)');
+        grd.addColorStop(0.35, 'rgba(255,255,255,0.5)');
+        grd.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+        const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+    })();
+    DEEPSKY.forEach(o => {
+        const p = raDecToVec(o.ra, o.dec);
+        const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: o.color, transparent: true, opacity: o.op, depthWrite: false, blending: THREE.AdditiveBlending }));
+        spr.position.set(p[0], p[1], p[2]).multiplyScalar(0.98);
+        spr.scale.set(o.sx, o.sy, 1);
+        constGroup.add(spr);
+        const lab = constLabel(o.ko);
+        lab.material.opacity = 0.42;
+        lab.scale.set(11, 2.8, 1);
+        lab.position.set(p[0], p[1] - 5, p[2]).multiplyScalar(0.965);
+        constGroup.add(lab);
+    });
+
+    constGroup.visible = false;
+    scene.add(constGroup);
     const atmo = new THREE.Mesh(
         new THREE.SphereGeometry(R * 1.06, 32, 20),
         new THREE.MeshBasicMaterial({ color: 0x7cc8ff, transparent: true, opacity: 0.07, depthWrite: false })
@@ -1960,6 +2096,7 @@ try {
         skyRefs.sky.visible = !space;
         skyRefs.sunSpr.visible = !space;
         stars.visible = space;
+        constGroup.visible = space;
         atmo.visible = space;
         shimmer.visible = !space;
         cloudPivots.forEach(c => { c.pivot.visible = !space; });
@@ -2947,6 +3084,7 @@ try {
             animals: birds.length + critters.length + flutters.length,
             audioOn: audioOn, audioReady: audioReady, audioState: audioCtx.state,
             masterGain: sndMaster ? +sndMaster.gain.value.toFixed(3) : null,
+            constellations: CONSTELLATIONS.length, deepsky: DEEPSKY.length, constVisible: constGroup.visible,
             calls: renderer.info.render.calls, tris: renderer.info.render.triangles
         });
     };
