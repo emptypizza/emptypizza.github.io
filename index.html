@@ -464,6 +464,8 @@
         .v-brand { top: 12px; left: 14px; padding: 9px 14px; font-weight: 800; letter-spacing: 0.09em; font-size: 0.88rem; z-index: 20; pointer-events: none; }
         .v-brand small { display: block; color: #6b5c48; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; margin-top: 2px; }
         .v-menu { top: 12px; right: 12px; padding: 9px 14px; font-size: 0.78rem; font-weight: 700; cursor: pointer; z-index: 20; }
+        .v-sound { top: 56px; right: 12px; padding: 7px 11px; font-size: 1.05rem; line-height: 1; cursor: pointer; z-index: 20; }
+        .v-sound:active { transform: translateY(1px); }
         .v-menu:active { transform: translateY(1px); }
         .v-hint { top: 64px; left: 50%; transform: translateX(-50%); padding: 6px 14px; font-size: 0.72rem; color: #6b5c48; white-space: nowrap; pointer-events: none; z-index: 20; }
         #v-panel { position: absolute; left: 50%; bottom: 118px; transform: translateX(-50%); width: min(420px, 92vw); background: rgba(249,241,222,0.96); border: 1.5px solid rgba(58,47,34,0.25); border-top: 5px solid #2e8b83; border-radius: 16px; box-shadow: 0 10px 30px rgba(58,47,34,0.25); padding: 14px 16px; display: none; box-sizing: border-box; z-index: 25; color: #3a2f22; }
@@ -581,6 +583,7 @@
         <div id="v-fade"></div>
         <div class="v-chip v-brand">GGHF ISLAND<small>작은 행성 &middot; 오락실 지구 &middot; 최경환</small></div>
         <button class="v-chip v-menu" id="v-menu" type="button">허브 페이지 &#8599;</button>
+        <button class="v-chip v-sound" id="v-sound" type="button" aria-label="사운드 켜기/끄기">&#128266;</button>
         <div class="v-chip v-hint">이동 WASD/방향키 &middot; 상호작용 E &middot; 간판에 다가가 보세요</div>
         <aside id="v-panel" role="dialog" aria-label="스팟 정보">
             <p class="vp-kor" id="vp-kor"></p>
@@ -1974,6 +1977,7 @@ try {
                 s.signBoard.material.needsUpdate = true;
             }
         });
+        applyAudioTheme(space);
     }
 
     /* ---------- 로켓 발사 시퀀스 ---------- */
@@ -1981,6 +1985,163 @@ try {
     function startLaunch() {
         if (launchAnim || !rocketParts) return;
         launchAnim = { t: 0, swapped: false };
+        sfxLaunch();
+    }
+
+    /* ===== 사운드: 앰비언트(주변음) + SFX (WebAudio 합성, 오디오 파일 없음) ===== */
+    let audioReady = false, audioOn = true;
+    let sndMaster, sndDay, sndSpace, sndNoiseBuf;
+    try { audioOn = localStorage.getItem('gghf-sound') !== 'off'; } catch (e) {}
+
+    function makeNoiseBuf() {
+        const len = Math.floor(audioCtx.sampleRate * 2);
+        const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+        const d = buf.getChannelData(0);
+        let last = 0;
+        for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            last = (last + 0.02 * w) / 1.02;   // 브라운 노이즈(저역 위주)
+            d[i] = last * 3.2;
+        }
+        return buf;
+    }
+    function buildAudioGraph() {
+        sndNoiseBuf = makeNoiseBuf();
+        sndMaster = audioCtx.createGain(); sndMaster.gain.value = 0; sndMaster.connect(audioCtx.destination);
+        sndDay = audioCtx.createGain(); sndDay.gain.value = 1; sndDay.connect(sndMaster);
+        sndSpace = audioCtx.createGain(); sndSpace.gain.value = 0; sndSpace.connect(sndMaster);
+        const now = audioCtx.currentTime;
+        // 파도 — 느린 스웰
+        const waves = audioCtx.createBufferSource(); waves.buffer = sndNoiseBuf; waves.loop = true;
+        const waveLP = audioCtx.createBiquadFilter(); waveLP.type = 'lowpass'; waveLP.frequency.value = 480;
+        const waveGain = audioCtx.createGain(); waveGain.gain.value = 0.06;
+        const lfo = audioCtx.createOscillator(); lfo.frequency.value = 0.13;
+        const lfoGain = audioCtx.createGain(); lfoGain.gain.value = 0.05;
+        lfo.connect(lfoGain); lfoGain.connect(waveGain.gain);
+        waves.connect(waveLP); waveLP.connect(waveGain); waveGain.connect(sndDay);
+        waves.start(now); lfo.start(now);
+        // 바람 — 은은한 정상음
+        const wind = audioCtx.createBufferSource(); wind.buffer = sndNoiseBuf; wind.loop = true;
+        const windBP = audioCtx.createBiquadFilter(); windBP.type = 'bandpass'; windBP.frequency.value = 720; windBP.Q.value = 0.6;
+        const windGain = audioCtx.createGain(); windGain.gain.value = 0.03;
+        wind.connect(windBP); windBP.connect(windGain); windGain.connect(sndDay);
+        wind.start(now);
+        // 우주 드론 — 저음 디튠
+        [58, 87].forEach((f, i) => {
+            const o = audioCtx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.detune.value = i ? 6 : -6;
+            const g = audioCtx.createGain(); g.gain.value = 0.05;
+            o.connect(g); g.connect(sndSpace); o.start(now);
+        });
+        audioReady = true;
+        scheduleChirp(); scheduleShimmer();
+    }
+    function startAmbient() {
+        if (audioReady && audioCtx.state === 'running') return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (!audioReady) buildAudioGraph();
+        updateAudioActive();
+    }
+    function updateAudioActive() {
+        if (!audioReady || !sndMaster) return;
+        const active = audioOn && document.body.classList.contains('in-village') && !document.hidden;
+        const now = audioCtx.currentTime;
+        sndMaster.gain.cancelScheduledValues(now);
+        sndMaster.gain.setTargetAtTime(active ? 0.5 : 0, now, 0.4);
+    }
+    function applyAudioTheme(space) {
+        if (!audioReady) return;
+        const now = audioCtx.currentTime;
+        sndDay.gain.setTargetAtTime(space ? 0 : 1, now, 0.8);
+        sndSpace.gain.setTargetAtTime(space ? 1 : 0, now, 0.8);
+    }
+    function setAudioOn(on) {
+        audioOn = on;
+        try { localStorage.setItem('gghf-sound', on ? 'on' : 'off'); } catch (e) {}
+        const btn = document.getElementById('v-sound');
+        if (btn) btn.textContent = on ? '🔊' : '🔇';
+        if (on) startAmbient(); else updateAudioActive();
+    }
+    function scheduleChirp() {
+        setTimeout(() => {
+            if (!audioReady) return;
+            if (audioOn && !isSpace && document.body.classList.contains('in-village') && !document.hidden) chirp();
+            scheduleChirp();
+        }, (2.5 + Math.random() * 5.5) * 1000);
+    }
+    function scheduleShimmer() {
+        setTimeout(() => {
+            if (!audioReady) return;
+            if (audioOn && isSpace && document.body.classList.contains('in-village') && !document.hidden) shimmerBlip();
+            scheduleShimmer();
+        }, (4 + Math.random() * 7) * 1000);
+    }
+    function chirp() {
+        if (!audioReady) return;
+        const now = audioCtx.currentTime;
+        const notes = 2 + (Math.random() * 3 | 0);
+        const base = 1800 + Math.random() * 1400;
+        for (let i = 0; i < notes; i++) {
+            const o = audioCtx.createOscillator(); o.type = 'sine';
+            const g = audioCtx.createGain();
+            const tt = now + i * 0.09;
+            o.frequency.setValueAtTime(base * (1 + i * 0.12 * (Math.random() < 0.5 ? 1 : -1)), tt);
+            g.gain.setValueAtTime(0, tt);
+            g.gain.linearRampToValueAtTime(0.05, tt + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.001, tt + 0.08);
+            o.connect(g); g.connect(sndDay);
+            o.start(tt); o.stop(tt + 0.1);
+        }
+    }
+    function shimmerBlip() {
+        if (!audioReady) return;
+        const now = audioCtx.currentTime;
+        const o = audioCtx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(1200 + Math.random() * 1600, now);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(0.04, now + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+        o.connect(g); g.connect(sndSpace);
+        o.start(now); o.stop(now + 1.5);
+    }
+    function sfxStep() {
+        if (!audioReady || !audioOn) return;
+        const now = audioCtx.currentTime;
+        const src = audioCtx.createBufferSource(); src.buffer = sndNoiseBuf;
+        const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 300;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.1, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        src.connect(lp); lp.connect(g); g.connect(sndMaster);
+        src.start(now, Math.random() * 1.5, 0.12);
+    }
+    function sfxTalk() {
+        if (!audioReady || !audioOn) return;
+        const now = audioCtx.currentTime;
+        const o = audioCtx.createOscillator(); o.type = 'triangle';
+        o.frequency.setValueAtTime(520, now);
+        o.frequency.exponentialRampToValueAtTime(760, now + 0.06);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.06, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        o.connect(g); g.connect(sndMaster);
+        o.start(now); o.stop(now + 0.13);
+    }
+    function sfxLaunch() {
+        if (!audioReady || !audioOn) return;
+        const now = audioCtx.currentTime;
+        const src = audioCtx.createBufferSource(); src.buffer = sndNoiseBuf; src.loop = true;
+        const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(120, now);
+        lp.frequency.linearRampToValueAtTime(900, now + 1.0);
+        lp.frequency.linearRampToValueAtTime(150, now + 2.1);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.22, now + 0.5);
+        g.gain.setValueAtTime(0.22, now + 1.4);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+        src.connect(lp); lp.connect(g); g.connect(sndMaster);
+        src.start(now); src.stop(now + 2.3);
     }
 
     const hero = new THREE.Group();
@@ -2480,6 +2641,7 @@ try {
             const p = document.getElementById('play');
             if (p) p.scrollIntoView({ behavior: 'instant', block: 'start' });
         } else { window.scrollTo(0, 0); }
+        updateAudioActive();
     }
     function enterVillage() {
         document.body.classList.add('in-village');
@@ -2490,12 +2652,13 @@ try {
         updateCamera(null);
         startLoop();
         renderer.domElement.focus({ preventScroll: true });
+        updateAudioActive();
     }
     function doAction() {
         if (!document.body.classList.contains('in-village') || launchAnim) return;
         if (talkingNPC) {
             const lines = talkingNPC.persona.lines || [];
-            if (talkLine < lines.length - 1) { talkLine++; renderTalkLine(); }
+            if (talkLine < lines.length - 1) { talkLine++; renderTalkLine(); sfxTalk(); }
             else { const link = talkingNPC.persona.link; endTalk(); if (link) window.open(link, '_blank', 'noopener'); }
             return;
         }
@@ -2509,6 +2672,9 @@ try {
     btnE.onclick = doAction;
     document.getElementById('v-menu').onclick = () => leaveVillage(false);
     document.getElementById('back-to-village').onclick = () => { pauseInlineGame(); enterVillage(); };
+    const sndBtn = document.getElementById('v-sound');
+    if (sndBtn) { sndBtn.textContent = audioOn ? '🔊' : '🔇'; sndBtn.onclick = () => setAudioOn(!audioOn); }
+    ['pointerdown', 'mousedown', 'touchstart', 'keydown', 'click'].forEach(ev => addEventListener(ev, startAmbient, { passive: true }));
 
     const _hpN = new THREE.Vector3(), _spN = new THREE.Vector3();
     function showPanel(o) {
@@ -2536,7 +2702,7 @@ try {
         const actLabel = last ? (p.link ? p.linkLabel : '닫기 (E)') : '다음 (E)';
         showPanel({ kor: p.name, sub: p.role, desc: lines[talkLine] || '', color: p.color, actLabel });
     }
-    function startTalk(n) { talkingNPC = n; talkLine = 0; renderTalkLine(); }
+    function startTalk(n) { talkingNPC = n; talkLine = 0; renderTalkLine(); sfxTalk(); }
     function endTalk() {
         if (talkingNPC) talkingNPC.timer = 0.3;
         talkingNPC = null; talkLine = 0; nearSpot = null; nearNPC = null;
@@ -2731,7 +2897,7 @@ try {
 
         if (walkBlend > 0.5 && !reducedMotion) {
             const stepSign = s > 0 ? 1 : -1;
-            if (stepSign !== prevStep) { spawnPuff(); prevStep = stepSign; }
+            if (stepSign !== prevStep) { spawnPuff(); sfxStep(); prevStep = stepSign; }
         }
         for (const p of puffs) {
             if (p.life > 0) {
@@ -2779,6 +2945,8 @@ try {
             npcs: NPCS.length,
             npcMinDist: NPCS.length ? +npcMinDist.toFixed(3) : null,
             animals: birds.length + critters.length + flutters.length,
+            audioOn: audioOn, audioReady: audioReady, audioState: audioCtx.state,
+            masterGain: sndMaster ? +sndMaster.gain.value.toFixed(3) : null,
             calls: renderer.info.render.calls, tris: renderer.info.render.triangles
         });
     };
@@ -2794,6 +2962,7 @@ try {
             updateCamera(null);
             startLoop();
         }
+        updateAudioActive();
     });
 
     document.body.classList.add('village-ready');
