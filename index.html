@@ -497,7 +497,103 @@
         .back-to-village { position: fixed; top: 12px; right: 12px; z-index: 50; background: rgba(249,241,222,0.94); border: 1.5px solid rgba(58,47,34,0.3); color: #3a2f22; font-family: 'Segoe UI', 'Apple SD Gothic Neo', system-ui, sans-serif; font-size: 0.76rem; font-weight: 700; padding: 9px 14px; border-radius: 14px; cursor: pointer; display: none; box-shadow: 0 3px 14px rgba(58,47,34,0.18); }
         body.village-ready:not(.in-village) .back-to-village { display: block; }
         @media (prefers-reduced-motion: reduce) { #v-stick { transition: none; } }
-    </style>
+    
+        /* ===== GGHF ↔ Trello bridge ===== */
+
+    .fb-form { display: grid; gap: 10px; }
+    .fb-form label { font-size: 0.78rem; font-weight: 800; color: var(--muted); }
+    .fb-form input[type="text"],
+    .fb-form textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        font: inherit;
+        font-size: 0.88rem;
+        resize: vertical;
+    }
+    .fb-form textarea { min-height: 84px; }
+    .fb-form input:focus, .fb-form textarea:focus {
+        outline: none;
+        border-color: rgba(0,229,255,0.45);
+        background: rgba(0,229,255,0.06);
+    }
+    .fb-form .fb-hp { position: absolute; left: -9999px; opacity: 0; height: 0; }
+    .fb-submit {
+        padding: 11px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(0,229,255,0.35);
+        background: linear-gradient(135deg, rgba(0,229,255,0.18), rgba(255,79,216,0.12));
+        color: var(--text);
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: transform .12s ease, filter .12s ease;
+    }
+    .fb-submit:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.15); }
+    .fb-submit:disabled { opacity: 0.45; cursor: default; }
+    .fb-status { font-size: 0.78rem; font-weight: 700; min-height: 1.1em; }
+    .fb-status[data-tone="ok"]   { color: var(--green); }
+    .fb-status[data-tone="err"]  { color: var(--danger); }
+    .fb-status[data-tone="busy"] { color: var(--muted); }
+    /* 게임오버 오버레이 안 보조 링크 */
+    .fb-overlay-link {
+        margin-top: 14px;
+        background: none;
+        border: none;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+    }
+    .fb-overlay-link:hover { color: var(--cyan); }
+
+    #roadmap-card[hidden] { display: none; }
+    .rm-list + .rm-list { margin-top: 16px; }
+    .rm-list-name {
+        display: inline-block;
+        margin: 0 0 8px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(255,215,0,0.10);
+        border: 1px solid rgba(255,215,0,0.22);
+        color: var(--gold);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    .rm-cards { display: grid; gap: 8px; }
+    .rm-card {
+        display: block;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.09);
+        background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025));
+        color: inherit;
+        text-decoration: none;
+        transition: border-color .14s ease, transform .14s ease;
+    }
+    a.rm-card:hover { border-color: rgba(0,229,255,0.4); transform: translateY(-1px); }
+    .rm-card strong { display: block; font-size: 0.92rem; margin-bottom: 3px; }
+    .rm-card p { margin: 0; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .rm-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .rm-tag {
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(0,229,255,0.10);
+        border: 1px solid rgba(0,229,255,0.18);
+        color: #bdf7ff;
+        font-size: 0.68rem;
+        font-weight: 800;
+    }
+</style>
 </head>
 <body>
     <main class="site-shell">
@@ -519,6 +615,30 @@
                 <div class="metric"><div class="metric-icon">🎮</div><div><b>Playable First</b><span>홈페이지 안에서 바로 게임을 실행</span></div></div>
                 <div class="metric"><div class="metric-icon">🏆</div><div><b>Gamified Portfolio</b><span>프로젝트 소개를 퀘스트 카드처럼 구성</span></div></div>
                 <div class="metric"><div class="metric-icon">🧩</div><div><b>Logic Preserved</b><span>기존 스테이지·적·열쇠 규칙 유지</span></div></div>
+            
+<section class="info-card" id="roadmap-card" hidden>
+    <h2 class="section-title">개발 로드맵 <span>Roadmap</span></h2>
+    <div id="roadmap-body"></div>
+</section>
+<section class="info-card" id="fb-card">
+    <h2 class="section-title">플레이 리포트 <span>Feedback</span></h2>
+    <p class="hero-copy">어디서 막혔는지, 뭐가 안 보였는지 한 줄이면 충분합니다. 바로 개발 보드로 들어갑니다.</p>
+    <form class="fb-form" id="fb-form" autocomplete="off">
+        <input class="fb-hp" type="text" name="website" tabindex="-1" aria-hidden="true">
+
+        <label for="fb-summary">한 줄 요약</label>
+        <input type="text" id="fb-summary" maxlength="300" placeholder="예: 2스테이지 열쇠가 어디 있는지 안 보임">
+
+        <label for="fb-detail">자세히 <span style="font-weight:600;">(선택)</span></label>
+        <textarea id="fb-detail" maxlength="1500" placeholder="어떤 상황이었는지, 무엇을 기대했는지"></textarea>
+
+        <label for="fb-contact">연락처 <span style="font-weight:600;">(선택 · 답변 받고 싶으면)</span></label>
+        <input type="text" id="fb-contact" maxlength="120" placeholder="이메일 / X / 디스코드">
+
+        <button type="submit" class="fb-submit" id="fb-submit">보드로 보내기</button>
+        <p class="fb-status" id="fb-status" role="status" aria-live="polite"></p>
+    </form>
+</section>
             </aside>
         </section>
 
@@ -2443,7 +2563,11 @@ try {
           lines: ['삐빅! GPT 드로이드 가동 중. 뭐든 물어봐!', '신호가 약하네… 조금 있다가 다시 얘기하자.', '대화 모듈 점검 중이야. Puter 로그인이 필요할 수도!'] },
         { name: '제미나이 센트리', role: 'GEMINI PROBE',   color: '#5b6ff0', accent: 0x5b6ff0, eye: 0x9fb4ff, isAI: true,
           systemPrompt: AI_NPC_RULES + ' 너는 제미나이 센트리 — 호기심 많은 탐사 드론이다. 이 행성과 우주를 관찰하는 게 취미고, 가끔 관측 데이터를 인용하듯 말한다.',
-          lines: ['관측 개시. 흥미로운 생명체 발견! 말을 걸어줘.', '통신 감도가 낮아… 재접속을 시도해 줘.', '데이터 링크 오프라인. Puter 로그인 후 다시 시도해 줘.'] }
+          lines: ['관측 개시. 흥미로운 생명체 발견! 말을 걸어줘.', '통신 감도가 낮아… 재접속을 시도해 줘.', '데이터 링크 오프라인. Puter 로그인 후 다시 시도해 줘.'] },
+        /* --- 제보 드론 (LLM 아님. 입력을 Trello 인박스로 전달) --- */
+        { name: '제보 드론', role: 'REPORT DRONE', color: '#00e5ff', accent: 0x00e5ff, eye: 0x9ff4ff,
+          isFeedback: true,
+          lines: ['삐- 제보 드론이야. 게임하다 아쉬웠던 거 아무거나 적어줘, 개발자 보드로 바로 꽂아줄게.'] }
     ];
 
     function makeNameTag(name, role, accent) {
@@ -2589,7 +2713,7 @@ try {
     }
 
     PERSONA_DEFS.forEach((p, i) => {
-        const built = p.isAI ? makeRobot(p) : makePersona(p);
+        const built = (p.isAI || p.isFeedback) ? makeRobot(p) : makePersona(p);
         scene.add(built.grp);
         const n = {
             persona: p,
@@ -2942,6 +3066,7 @@ try {
         showPanel({ kor: p.name, sub: p.role, desc: lines[talkLine] || '', color: p.color, actLabel });
     }
     function startTalk(n) {
+        if (n.persona.isFeedback) { openFeedbackChat(n); return; }
         if (n.persona.isAI) { openAiChat(n); return; }
         talkingNPC = n; talkLine = 0; renderTalkLine(); sfxTalk();
     }
@@ -2984,6 +3109,58 @@ try {
         sfxTalk();
         if (!matchMedia('(pointer: coarse)').matches) vpInput.focus();
     }
+    /* ---- 제보 드론 — 입력을 Trello 인박스로 보낸다 (LLM 호출 없음) ---- */
+    const DRONE_OK = [
+        '접수 완료! 보드에 꽂았어. 더 있으면 계속 적어줘.',
+        '두 번째 제보 접수. 이런 게 제일 도움 돼.',
+        '세 번째까지 받았어. 오늘은 여기까지야 — 고마워!'
+    ];
+    const DRONE_ERR = {
+        rate_limited:   '오늘 할당량 끝났어. 다음에 또 와줘!',
+        too_short:      '너무 짧아서 못 보내겠어. 한 문장만 더 적어줄래?',
+        not_configured: '수신기가 아직 안 켜졌네… 개발자한테 전해둘게.',
+        network:        '통신이 끊겼어. 잠시 후 다시 보내줄래?',
+        server:         '전송에 실패했어. 잠시 후 다시 시도해줘.'
+    };
+
+    function openFeedbackChat(n) {
+        talkingNPC = n;
+        n.canceled = false;
+        n.reports = n.reports || 0;
+        showPanel({ kor: n.persona.name, sub: n.persona.role, color: n.persona.color, actLabel: '닫기 (E)', ai: true });
+        chatBubble('msg-ai', n.persona.lines[0]);
+        sfxTalk();
+        if (!matchMedia('(pointer: coarse)').matches) vpInput.focus();
+    }
+
+    async function sendDroneReport(n, text) {
+        n.busy = true;
+        vpSend.disabled = true;
+        const bubble = chatBubble('msg-ai', '전송 중…');
+        try {
+            const api = window.GGHF_FEEDBACK;
+            // 사이드바 폼과 동일한 전송 경로(엔드포인트·레이트리밋·에러 해석 공유)
+            const r = api
+                ? await api.send({ summary: text, stage: 'village:제보드론' })
+                : { ok: false, reason: 'network' };
+
+            if (talkingNPC !== n || n.canceled) return;   // 도중에 대화 종료됨
+
+            if (r.ok) {
+                bubble.textContent = DRONE_OK[Math.min(n.reports, DRONE_OK.length - 1)];
+                n.reports += 1;
+            } else {
+                bubble.textContent = DRONE_ERR[r.reason] || DRONE_ERR.server;
+            }
+        } catch (err) {
+            if (talkingNPC === n && !n.canceled) bubble.textContent = DRONE_ERR.network;
+        } finally {
+            n.busy = false;
+            vpSend.disabled = false;
+            vpChat.scrollTop = vpChat.scrollHeight;
+        }
+    }
+
     function fallbackReply(n, bubble) {
         const lines = n.persona.lines || [];
         const line = lines.length ? lines[n.fallbackIdx++ % lines.length] : '지금은 응답할 수 없어. 잠시 후 다시 말 걸어줘.';
@@ -2998,11 +3175,13 @@ try {
     vpForm.addEventListener('submit', async e => {
         e.preventDefault();
         const n = talkingNPC;
-        if (!n || !n.persona.isAI || n.busy) return;
+        if (!n || n.busy) return;
+        if (!n.persona.isAI && !n.persona.isFeedback) return;
         const q = vpInput.value.trim();
         if (!q) return;
         chatBubble('msg-user', q);
         vpInput.value = '';
+        if (n.persona.isFeedback) { await sendDroneReport(n, q); return; }
         n.messages.push({ role: 'user', content: q });
         if (!hasPuter()) { fallbackReply(n); return; }
         n.busy = true;
@@ -3291,6 +3470,210 @@ try {
 } catch (err) {
     console.warn('GGHF island: 3D unavailable, falling back to 2D page.', err);
 }
+    </script>
+    <!-- ===== GGHF ↔ Trello bridge ===== -->
+    <script>
+
+(async function renderRoadmap() {
+    const card = document.getElementById('roadmap-card');
+    const body = document.getElementById('roadmap-body');
+    if (!card || !body) return;
+
+    let data;
+    try {
+        // 같은 오리진이라 CORS 없음. no-cache로 GitHub Pages 캐시를 재검증.
+        const res = await fetch('./data/quests.json', { cache: 'no-cache' });
+        if (!res.ok) return;                       // 파일 없음 → 카드 안 뜸
+        data = await res.json();
+    } catch (e) {
+        return;                                    // 실패해도 사이트는 멀쩡
+    }
+
+    if (!data || data.schema !== 1 || !Array.isArray(data.lists)) return;
+
+    const frag = document.createDocumentFragment();
+    let total = 0;
+
+    for (const group of data.lists) {
+        if (!group.cards || !group.cards.length) continue;
+
+        const wrap = document.createElement('div');
+        wrap.className = 'rm-list';
+
+        const name = document.createElement('span');
+        name.className = 'rm-list-name';
+        name.textContent = group.list;
+        wrap.appendChild(name);
+
+        const cards = document.createElement('div');
+        cards.className = 'rm-cards';
+
+        for (const c of group.cards) {
+            // 링크는 카드 URL이 있을 때만. 없으면 div로 렌더.
+            const el = document.createElement(c.url ? 'a' : 'div');
+            el.className = 'rm-card';
+            if (c.url) { el.href = c.url; el.target = '_blank'; el.rel = 'noopener'; }
+
+            const t = document.createElement('strong');
+            t.textContent = c.title;                // textContent = XSS 차단
+            el.appendChild(t);
+
+            if (c.note) {
+                const p = document.createElement('p');
+                p.textContent = c.note;
+                el.appendChild(p);
+            }
+
+            if (Array.isArray(c.tags) && c.tags.length) {
+                const tags = document.createElement('div');
+                tags.className = 'rm-tags';
+                for (const tag of c.tags.slice(0, 4)) {
+                    const s = document.createElement('span');
+                    s.className = 'rm-tag';
+                    s.textContent = tag;
+                    tags.appendChild(s);
+                }
+                el.appendChild(tags);
+            }
+
+            cards.appendChild(el);
+            total++;
+        }
+
+        wrap.appendChild(cards);
+        frag.appendChild(wrap);
+    }
+
+    if (!total) return;                            // 빈 로드맵은 안 보여준다
+
+    body.appendChild(frag);
+    card.hidden = false;
+})();
+
+
+window.GGHF_FEEDBACK = (function () {
+    // ↓↓↓ 배포한 워커 URL로 교체 ↓↓↓
+    const ENDPOINT = 'https://gghf-trello-inbox.netlify.app/trello-inbox';
+
+    const form   = document.getElementById('fb-form');
+    const status = document.getElementById('fb-status');
+    const submit = document.getElementById('fb-submit');
+    const card   = document.getElementById('fb-card');
+
+    let sessionStart = Date.now();
+    let sent = 0;
+    const MAX_PER_SESSION = 3;
+
+    /**
+     * 공통 전송 경로. 사이드바 폼과 3D 월드의 제보 드론이 둘 다 이걸 쓴다.
+     * 엔드포인트·레이트리밋·에러 해석이 한 군데에만 존재하게 만든다.
+     * @returns {Promise<{ok:boolean, reason?:string}>}
+     *   reason: 'rate_limited' | 'too_short' | 'not_configured' | 'network' | 'server'
+     */
+    async function send(fields) {
+        if (sent >= MAX_PER_SESSION) return { ok: false, reason: 'rate_limited' };
+
+        const payload = {
+            website:  fields.website || '',
+            summary:  fields.summary || '',
+            detail:   fields.detail || '',
+            contact:  fields.contact || '',
+            stage:    fields.stage || currentStage(),
+            playtime: Math.round((Date.now() - sessionStart) / 1000) + 's',
+            viewport: window.innerWidth + 'x' + window.innerHeight,
+        };
+
+        if ((payload.summary + payload.detail).trim().length < 5) {
+            return { ok: false, reason: 'too_short' };
+        }
+
+        let res;
+        try {
+            res = await fetch(ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+        } catch (err) {
+            return { ok: false, reason: 'network' };
+        }
+
+        if (res.ok) { sent += 1; return { ok: true }; }
+        if (res.status === 503) return { ok: false, reason: 'not_configured' };
+        return { ok: false, reason: 'server' };
+    }
+
+    function setStatus(msg, tone) {
+        status.textContent = msg;
+        if (tone) status.dataset.tone = tone; else delete status.dataset.tone;
+    }
+
+    function currentStage() {
+        // 게임 스크립트의 전역을 방어적으로 읽는다. 없으면 hub.
+        try {
+            if (typeof currentStageIdx === 'number') return 'stage' + (currentStageIdx + 1);
+        } catch (e) {}
+        return 'hub';
+    }
+
+    const FORM_MSG = {
+        rate_limited:   ['오늘은 여기까지! 고맙습니다.', 'ok'],
+        too_short:      ['한 줄만이라도 적어주세요.', 'err'],
+        not_configured: ['접수 창구가 아직 준비 중입니다. 곧 열립니다.', 'err'],
+        network:        ['전송 실패. 잠시 후 다시 시도해주세요.', 'err'],
+        server:         ['전송 실패. 잠시 후 다시 시도해주세요.', 'err'],
+    };
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        submit.disabled = true;
+        setStatus('보내는 중…', 'busy');
+
+        const r = await send({
+            website: form.elements['website'].value,            // 허니팟
+            summary: document.getElementById('fb-summary').value,
+            detail:  document.getElementById('fb-detail').value,
+            contact: document.getElementById('fb-contact').value,
+        });
+
+        if (r.ok) {
+            form.reset();
+            setStatus('전달됐습니다. 고맙습니다!', 'ok');
+        } else {
+            setStatus.apply(null, FORM_MSG[r.reason] || FORM_MSG.server);
+        }
+        submit.disabled = false;
+    });
+
+    // 게임오버 오버레이에서 호출할 진입점
+    function openFromOverlay() {
+        const overlay = document.getElementById('overlay');
+        if (overlay) overlay.style.display = 'none';
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('fb-summary').focus({ preventScroll: true });
+    }
+
+    // 오버레이에 보조 링크를 한 번만 심는다
+    function mountOverlayLink() {
+        const overlay = document.getElementById('overlay');
+        if (!overlay || overlay.querySelector('.fb-overlay-link')) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'fb-overlay-link';
+        btn.textContent = '여기서 뭐가 아쉬웠나요? →';
+        btn.addEventListener('click', openFromOverlay);
+        overlay.appendChild(btn);
+    }
+
+    return {
+        onGameOver: mountOverlayLink,
+        open: openFromOverlay,
+        send,                                   // 3D 월드의 제보 드론이 사용
+        remaining: () => MAX_PER_SESSION - sent,
+    };
+})();
+
     </script>
 </body>
 </html>
