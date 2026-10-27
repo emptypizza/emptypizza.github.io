@@ -1,0 +1,450 @@
+/* ================= GGHF ISLAND : 지브리풍 작은 행성 (오버레이 레이어) ================= */
+body.in-village  {
+  overflow: hidden;
+  height: 100vh;
+}
+body.in-village .site-shell  {
+  display: none;
+}
+#village-screen  {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: linear-gradient(180deg, #9fd3d4 0%, #f7e6c6 100%);
+}
+body.in-village #village-screen  {
+  display: block;
+}
+#village-canvas-wrap, #village-canvas-wrap canvas  {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+#v-fade  {
+  position: absolute;
+  inset: 0;
+  background: #04050c;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 35;
+}
+.v-chip  {
+  position: absolute;
+  background: rgba(249,241,222,0.94);
+  border: 1.5px solid rgba(58,47,34,0.25);
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(58,47,34,0.18);
+  color: #3a2f22;
+  font-family: 'Segoe UI', 'Apple SD Gothic Neo', system-ui, sans-serif;
+}
+.v-brand  {
+  top: 12px;
+  left: 14px;
+  padding: 9px 14px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  font-size: 0.88rem;
+  z-index: 20;
+  pointer-events: none;
+}
+.v-brand small  {
+  display: block;
+  color: #6b5c48;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  margin-top: 2px;
+}
+.v-menu  {
+  top: 12px;
+  right: 12px;
+  padding: 9px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 20;
+}
+.v-sound  {
+  top: 56px;
+  right: 12px;
+  padding: 7px 11px;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 20;
+}
+.v-sound:active  {
+  transform: translateY(1px);
+}
+.v-menu:active  {
+  transform: translateY(1px);
+}
+.v-hint  {
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  color: #6b5c48;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+}
+#v-panel  {
+  position: absolute;
+  left: 50%;
+  bottom: 118px;
+  transform: translateX(-50%);
+  width: min(420px, 92vw);
+  background: rgba(249,241,222,0.96);
+  border: 1.5px solid rgba(58,47,34,0.25);
+  border-top: 5px solid #2e8b83;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(58,47,34,0.25);
+  padding: 14px 16px;
+  display: none;
+  box-sizing: border-box;
+  z-index: 25;
+  color: #3a2f22;
+}
+#v-panel.show  {
+  display: block;
+}
+#v-panel .vp-kor  {
+  margin: 0 0 2px;
+  font-weight: 900;
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
+}
+#v-panel .vp-sub  {
+  margin: 0 0 8px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  color: #6b5c48;
+  text-transform: uppercase;
+}
+#v-panel .vp-desc  {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #4c4132;
+}
+#v-panel .vp-badge  {
+  margin: 0 0 10px;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: #8a6a1f;
+  display: none;
+}
+#v-act  {
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #3a2f22;
+  color: #f7eeda;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+  cursor: pointer;
+  display: none;
+}
+#v-act:active  {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+}
+#vp-chat  {
+  display: none;
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 0 0 10px;
+  padding-right: 4px;
+}
+#v-panel.ai-chat #vp-chat  {
+  display: block;
+}
+#vp-chat .msg  {
+  margin: 0 0 6px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  max-width: 88%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#vp-chat .msg-user  {
+  background: rgba(58,47,34,0.12);
+  margin-left: auto;
+  text-align: right;
+}
+#vp-chat .msg-ai  {
+  background: rgba(46,139,131,0.14);
+  margin-right: auto;
+}
+#vp-chatform  {
+  display: none;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+#v-panel.ai-chat #vp-chatform  {
+  display: flex;
+}
+#vp-input  {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1.5px solid rgba(58,47,34,0.3);
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #3a2f22;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+#vp-input:focus  {
+  outline: 2px solid rgba(46,139,131,0.5);
+}
+#vp-send  {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #3a2f22;
+  color: #f7eeda;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+#vp-send:disabled  {
+  opacity: 0.5;
+  cursor: default;
+}
+/* 모바일: 온스크린 키보드가 하단 패널을 가리지 않도록 채팅 중엔 위쪽 배치 */
+@media (pointer: coarse)  {
+  #v-panel.ai-chat  {
+    bottom: auto;
+    top: 72px;
+  }
+}
+#v-joy  {
+  position: absolute;
+  left: 22px;
+  bottom: 26px;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background: rgba(249,241,222,0.4);
+  border: 2px solid rgba(58,47,34,0.35);
+  touch-action: none;
+  display: none;
+  z-index: 30;
+}
+#v-stick  {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 50px;
+  height: 50px;
+  margin: -25px 0 0 -25px;
+  border-radius: 50%;
+  background: rgba(58,47,34,0.55);
+  border: 2px solid rgba(249,241,222,0.8);
+}
+#v-int  {
+  position: absolute;
+  right: 24px;
+  bottom: 44px;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: rgba(249,241,222,0.96);
+  color: #3a2f22;
+  border: 2.5px solid rgba(58,47,34,0.5);
+  font-weight: 900;
+  font-size: 1.05rem;
+  box-shadow: 0 4px 0 rgba(58,47,34,0.35);
+  display: none;
+  cursor: pointer;
+  z-index: 30;
+}
+#v-int:active  {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(58,47,34,0.35);
+}
+@media (pointer: coarse)  {
+  body.in-village #v-joy  {
+    display: block;
+  }
+  .v-hint  {
+    display: none;
+  }
+}
+.back-to-village  {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 50;
+  background: rgba(249,241,222,0.94);
+  border: 1.5px solid rgba(58,47,34,0.3);
+  color: #3a2f22;
+  font-family: 'Segoe UI', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: none;
+  box-shadow: 0 3px 14px rgba(58,47,34,0.18);
+}
+body.village-ready:not(.in-village) .back-to-village  {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce)  {
+  #v-stick  {
+    transition: none;
+  }
+}
+.v-nav {
+  position:absolute;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:30;
+  display:flex;
+  gap:3px;
+  padding:5px;
+  background:#f9f1deeF;
+  border:1px solid #3a2f2240;
+  border-radius:12px
+}
+.v-nav button {
+  border:0;
+  background:transparent;
+  color:#3a2f22;
+  padding:8px 10px;
+  min-height:40px;
+  font-size:.75rem;
+  font-weight:700;
+  white-space:nowrap
+}
+.v-nav button:hover {
+  background:#e3dfcb;
+  border-radius:6px
+}
+#village-screen .v-hint {
+  top:76px
+}
+.touch-hint {
+  display:none
+}
+#v-panel {
+  max-height:calc(100dvh - 180px);
+  overflow:auto
+}
+#vp-ai-notice {
+  font-size:.65rem;
+  line-height:1.5;
+  color:#6b5c48;
+  margin:5px 0 10px
+}
+#vp-ai-notice[hidden] {
+  display:none
+}
+.v-brand {
+  max-width:190px
+}
+.v-hint {
+  max-width:calc(100% - 20px);
+  white-space:normal;
+  text-align:center
+}
+#v-int {
+  font-size:.85rem
+}
+#village-canvas-wrap canvas {
+  outline-offset:-4px
+}
+@media(max-width:760px) {
+  .v-nav {
+    top:65px;
+    left:12px;
+    transform:none;
+    right:12px;
+    justify-content:space-evenly;
+    padding:2px
+  }
+  .v-nav button {
+    padding:5px 12px;
+    min-height:36px
+  }
+  .v-brand {
+    font-size:.75rem;
+    max-width:160px;
+    padding:8px 10px
+  }
+  .v-brand small {
+    font-size:.55rem
+  }
+  .v-menu {
+    font-size:.7rem;
+    max-width:calc(100% - 195px)
+  }
+  .v-sound {
+    top:115px
+  }
+  #village-screen .v-hint {
+    top:111px;
+    width:calc(100% - 100px);
+    left:12px;
+    transform:none;
+    font-size:.62rem
+  }
+  #v-panel {
+    bottom:145px;
+    max-height:calc(100dvh - 310px);
+    padding:12px
+  }
+  #v-joy {
+    width:100px;
+    height:100px;
+    left:14px;
+    bottom:22px
+  }
+  #v-int {
+    right:16px;
+    bottom:35px;
+    width:65px;
+    height:65px
+  }
+}
+@media(pointer:coarse) {
+  #village-screen .v-hint {
+    display:block
+  }
+  .desktop-hint {
+    display:none
+  }
+  .touch-hint {
+    display:inline
+  }
+  #v-panel.ai-chat {
+    top:155px;
+    bottom:auto;
+    max-height:calc(100dvh - 180px)
+  }
+}
+#vp-chatform[hidden] {
+  display:none!important
+}
+@media(max-width:760px) {
+  body.in-village #v-joy {
+    display:block
+  }
+  .desktop-hint {
+    display:none
+  }
+  .touch-hint {
+    display:inline
+  }
+}

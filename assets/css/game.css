@@ -1,0 +1,286 @@
+.header  {
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+  font-weight: 900;
+  font-size: 0.92rem;
+  z-index: 10;
+}
+.header > div  {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.18);
+  text-align: center;
+  white-space: nowrap;
+}
+.highlight  {
+  color: var(--cyan);
+}
+.key-text  {
+  color: var(--gold);
+  display: none;
+}
+.mission-bar  {
+  width: 100%;
+  margin: 12px 0 14px;
+  background: linear-gradient(135deg, rgba(255,215,0,0.16), rgba(0,229,255,0.10));
+  border: 1px solid rgba(255,215,0,0.28);
+  color: #fff2a8;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 17px;
+  font-size: 0.94rem;
+  font-weight: 800;
+  transition: all 0.3s;
+}
+#game-board  {
+  display: grid;
+  width: min(88vw, 430px);
+  height: min(88vw, 430px);
+  max-width: 430px;
+  max-height: 430px;
+  margin: 0 auto 14px;
+  border: 4px solid rgba(0,229,255,0.28);
+  border-radius: 24px;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+  box-shadow: inset 0 0 30px rgba(0,229,255,0.08), 0 22px 55px rgba(0,0,0,0.35);
+}
+.cell  {
+  border: 1px solid #222;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.painted  {
+  background-color: #00bcd4;
+  box-shadow: 0 0 5px #00bcd4;
+  border: 1px solid #4dd0e1;
+  transition: background-color 0.1s;
+}
+.player  {
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ffffff;
+  z-index: 10;
+  width: 70%;
+  height: 70%;
+}
+.enemy  {
+  background-color: #ff3d00;
+  border-radius: 15%;
+  box-shadow: 0 0 10px #ff3d00;
+  z-index: 5;
+  width: 70%;
+  height: 70%;
+  transition: all 0.2s ease-in-out;
+}
+.gold-key  {
+  width: 60%;
+  height: 60%;
+  background-color: #ffd700;
+  border-radius: 50%;
+  box-shadow: 0 0 15px #ffd700;
+  z-index: 8;
+  animation: key-lifetime 3s forwards;
+}
+@keyframes key-lifetime  {
+  0%  {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  10%  {
+    opacity: 1;
+    transform: scale(1);
+  }
+  70%  {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80%  {
+    opacity: 0.5;
+  }
+  90%  {
+    opacity: 1;
+  }
+  100%  {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+.controls-area  {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0 4px;
+}
+.d-pad  {
+  display: grid;
+  grid-template-columns: 78px 78px 78px;
+  grid-template-rows: 70px 70px;
+  gap: 10px;
+}
+.btn  {
+  background: linear-gradient(180deg, #374151, #1f2937);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  color: white;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 0 #090b12, 0 0 18px rgba(0,229,255,0.08);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.btn:active  {
+  background: #4b5563;
+  box-shadow: 0 2px 0 #090b12;
+  transform: translateY(4px);
+}
+#overlay  {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  display: none;
+  padding: 20px;
+  text-align: center;
+}
+button.action-btn  {
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 1.4rem;
+  background: #00e5ff;
+  color: #000;
+  border: none;
+  border-radius: 50px;
+  font-weight: bold;
+  box-shadow: 0 0 15px #00e5ff;
+  cursor: pointer;
+}
+/* The board keeps its arcade character inside the warm portfolio. */
+.play-card {
+  padding:16px;
+  background:#19372d;
+  color:#f4f5e8;
+  border-radius:12px;
+  position:relative
+}
+.play-card .header {
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  font-size:.7rem;
+  gap:5px;
+  border-radius:8px
+}
+.play-card .header>div {
+  gap:5px;
+  border-radius:6px;
+  min-height:32px
+}
+.play-card .header span {
+  color:#a7e3cd
+}
+.play-card .mission-bar {
+  font-size:.75rem;
+  border-radius:8px;
+  padding:8px;
+  line-height:1.5
+}
+.board-wrap {
+  position:relative;
+  max-width:430px;
+  margin:auto
+}
+#game-board {
+  width:100%;
+  height:auto;
+  aspect-ratio:1;
+  border-radius:10px;
+  margin-bottom:0;
+  border:2px solid #74bda2
+}
+.play-card #overlay {
+  border-radius:10px;
+  background:rgba(15,35,27,.92);
+  z-index:15
+}
+.play-card #result-title {
+  font-size:1.5rem;
+  letter-spacing:-.035em
+}
+.play-card #result-desc {
+  font-size:.8rem;
+  color:#cfddcc;
+  margin-top:10px
+}
+.play-card .action-btn {
+  margin-top:20px;
+  font-size:.88rem;
+  padding:12px 20px;
+  border-radius:5px;
+  background:#edb36e;
+  box-shadow:none;
+  color:#183e2b
+}
+.play-card .d-pad {
+  grid-template-columns:54px 54px 54px;
+  grid-template-rows:44px 44px;
+  gap:7px
+}
+.play-card .btn {
+  font-size:23px;
+  border-radius:7px;
+  background:#2b5142;
+  box-shadow:0 3px 0 #0a2015;
+  line-height:1
+}
+.play-card .controls-area {
+  padding-top:15px
+}
+.time-low {
+  color:#ff9f84!important
+}
+.play-card .fb-overlay-link {
+  font-size:.72rem;
+  color:#e6d7ba;
+  background:transparent;
+  border:0;
+  border-bottom:1px solid #8fa58b;
+  margin-top:14px
+}
+.gold-key {
+  animation:none
+}
+.play-card .key-text {
+  color:#f8d283
+}
+@media(max-width:380px) {
+  .play-card {
+    padding:10px
+  }
+  .play-card .header {
+    font-size:.62rem;
+    gap:3px
+  }
+}

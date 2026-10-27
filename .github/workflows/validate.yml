@@ -1,0 +1,22 @@
+name: Validate homepage
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          for file in assets/js/*.js assets/data/*.js; do node --check "$file"; done
+      - name: Check local links and sharing assets
+        run: node scripts/check-site.mjs
+      - name: Verify game and feedback behavior
+        run: node --test tests/*.test.mjs
