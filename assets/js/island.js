@@ -1409,8 +1409,8 @@ try {
     /* ================= 자율 NPC — 나의 다른 페르소나들 (GTA풍 배회) ================= */
     const AI_NPC_RULES = '너는 GGHF 작은 행성 3D 월드를 배회하는 AI 에이전트 NPC다. 항상 한국어로, 1~2문장의 짧은 구어체로만 답한다. 마크다운이나 목록, 코드블록은 쓰지 않는다. 캐릭터를 유지한다.';
     const PERSONA_DEFS = [
-        { name: '최경환',       role: 'GAME DEVELOPER', color: '#12a5b8', shirt: 0x2e8b83, shorts: 0x274652, hair: 0x2a2622, skin: 0xedc39b,
-          lines: ['안녕, 나도 최경환의 한 조각이야.', '게임과 개발 실험을 이 작은 행성에 모아뒀어. 위쪽 작품 메뉴에서도 바로 볼 수 있어.', 'GitHub에 오면 더 많은 실험을 볼 수 있어.'],
+        { name: 'Marc Choi',       role: 'GAME DEVELOPER', color: '#12a5b8', shirt: 0x2e8b83, shorts: 0x274652, hair: 0x2a2622, skin: 0xedc39b,
+          lines: ['안녕, 나도 Marc Choi의 한 조각이야.', '게임과 개발 실험을 이 작은 행성에 모아뒀어. 위쪽 작품 메뉴에서도 바로 볼 수 있어.', 'GitHub에 오면 더 많은 실험을 볼 수 있어.'],
           link: 'https://github.com/emptypizza', linkLabel: 'GitHub 열기 (E)' },
         { name: '인디 대표',    role: 'GGHF FOUNDER',   color: '#b5453c', shirt: 0xb5453c, shorts: 0x3d4660, hair: 0x1f1a17, skin: 0xf0c9a0,
           lines: ['난 GGHF라는 인디 게임 스튜디오를 운영해.', 'itch.io에 프로토타입부터 출시작까지 다 올려뒀어.'],

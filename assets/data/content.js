@@ -1,7 +1,7 @@
 // Public portfolio content shared by the homepage and the island.
 // GitHub Pages only: contact uses a public email link.
 window.GGHF_CONTENT = {
-  profile: { name: '최경환', studio: 'GGHF', email: 'team.gghf@gmail.com', github: 'https://github.com/emptypizza', itch: 'https://gghf.itch.io' },
+  profile: { name: 'Marc Choi', studio: 'GGHF', email: 'team.gghf@gmail.com', github: 'https://github.com/emptypizza', itch: 'https://gghf.itch.io' },
   study: { name: '서울인디게임즈', url: 'https://emptypizza.github.io/seoulindies/', description: '게임을 만드는 사람들이 모여 AI 도구의 시행착오와 실제 개발 경험을 나눕니다.' },
   checkedAt: '2026-10-27',
   projects: [
