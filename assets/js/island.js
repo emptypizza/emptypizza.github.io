@@ -1435,10 +1435,10 @@ try {
         { name: '제미나이 센트리', role: 'GEMINI PROBE',   color: '#5b6ff0', accent: 0x5b6ff0, eye: 0x9fb4ff, isAI: true,
           systemPrompt: AI_NPC_RULES + ' 너는 제미나이 센트리 — 호기심 많은 탐사 드론이다. 이 행성과 우주를 관찰하는 게 취미고, 가끔 관측 데이터를 인용하듯 말한다.',
           lines: ['관측 개시. 흥미로운 생명체 발견! 말을 걸어줘.', '통신 감도가 낮아… 재접속을 시도해 줘.', '데이터 링크 오프라인. Puter 로그인 후 다시 시도해 줘.'] },
-        /* --- 제보 드론 (LLM 아님. 입력을 Trello 인박스로 전달) --- */
+        /* --- 제보 드론: 이메일 연락 페이지 안내 --- */
         { name: '제보 드론', role: 'REPORT DRONE', color: '#00e5ff', accent: 0x00e5ff, eye: 0x9ff4ff,
           isFeedback: true,
-          lines: ['삐- 제보 드론이야. 게임하다 아쉬웠던 거 아무거나 적어줘, 개발자 보드로 바로 꽂아줄게.'] }
+          lines: ['삐- 제보 드론이야. 게임하다 발견한 문제나 아이디어를 이메일로 보내줘. 연락 페이지로 안내할게.'] }
     ];
 
     function makeNameTag(name, role, accent) {
@@ -1894,7 +1894,7 @@ try {
     function doAction() {
         if (!document.body.classList.contains('in-village') || launchAnim) return;
         if (talkingNPC) {
-            if (talkingNPC.persona.isFeedback && !content.feedback.enabled) { leaveVillage('contact'); return; }
+            if (talkingNPC.persona.isFeedback) { leaveVillage('contact'); return; }
             if (talkingNPC.persona.isAI || talkingNPC.persona.isFeedback) { endTalk(); renderer.domElement.focus(); return; }
             const lines = talkingNPC.persona.lines || [];
             if (talkLine < lines.length - 1) { talkLine++; renderTalkLine(); sfxTalk(); }
@@ -1993,67 +1993,16 @@ try {
         sfxTalk();
         if (!matchMedia('(pointer: coarse)').matches) vpInput.focus();
     }
-    /* ---- 제보 드론 — 입력을 Trello 인박스로 보낸다 (LLM 호출 없음) ---- */
-    const DRONE_OK = [
-        '접수 완료! 보드에 꽂았어. 더 있으면 계속 적어줘.',
-        '두 번째 제보 접수. 이런 게 제일 도움 돼.',
-        '세 번째까지 받았어. 오늘은 여기까지야 — 고마워!'
-    ];
-    const DRONE_ERR = {
-        rate_limited:   '오늘 할당량 끝났어. 다음에 또 와줘!',
-        too_short:      '너무 짧아서 못 보내겠어. 한 문장만 더 적어줄래?',
-        not_configured: '온라인 접수 준비 중이야. 연락 메뉴의 이메일로 보내줘. 아직 전송되지는 않았어.',
-        busy: '앞선 제보를 보내는 중이야. 잠시만 기다려줘.',
-        timeout: '응답이 늦어 접수 여부를 확인하지 못했어. 잠시 후 다시 확인해줘.',
-        network:        '통신이 끊겼어. 잠시 후 다시 보내줄래?',
-        server:         '전송에 실패했어. 잠시 후 다시 시도해줘.'
-    };
-
+    /* ---- 제보 드론: 직접 전송 없이 연락 페이지로 안내 ---- */
     function openFeedbackChat(n) {
         stopMovement();
         talkingNPC = n;
         n.canceled = false;
-        n.reports = n.reports || 0;
-        if (!content.feedback.enabled) {
-            showPanel({ kor: n.persona.name, sub: n.persona.role, color: n.persona.color, actLabel: '연락 페이지로 (E)', ai: true });
-            vpForm.hidden = true;
-            chatBubble('msg-ai', '온라인 제보 접수 준비 중이야. 연락 페이지의 이메일로 게임 의견을 보내줘.');
-            return;
-        }
-        vpForm.hidden = false;
-        showPanel({ kor: n.persona.name, sub: n.persona.role, color: n.persona.color, actLabel: '닫기 (E)', ai: true });
+        showPanel({ kor: n.persona.name, sub: n.persona.role, color: n.persona.color, actLabel: '연락 페이지로 (E)', ai: true });
+        vpForm.hidden = true;
+        document.getElementById('vp-ai-notice').hidden = true;
         chatBubble('msg-ai', n.persona.lines[0]);
         sfxTalk();
-        if (!matchMedia('(pointer: coarse)').matches) vpInput.focus();
-    }
-
-    async function sendDroneReport(n, text) {
-        n.busy = true;
-        vpSend.disabled = true;
-        const bubble = chatBubble('msg-ai', '전송 중…');
-        try {
-            const api = window.GGHF_FEEDBACK;
-            // 사이드바 폼과 동일한 전송 경로(엔드포인트·레이트리밋·에러 해석 공유)
-            const r = api
-                ? await api.send({ summary: text, stage: 'village:제보드론' })
-                : { ok: false, reason: 'network' };
-
-            if (talkingNPC !== n || n.canceled) return;   // 도중에 대화 종료됨
-
-            if (r.ok) {
-                bubble.textContent = DRONE_OK[Math.min(n.reports, DRONE_OK.length - 1)];
-                n.reports += 1;
-            } else {
-                bubble.textContent = DRONE_ERR[r.reason] || DRONE_ERR.server;
-                if (!vpInput.value) vpInput.value = text;
-            }
-        } catch (err) {
-            if (talkingNPC === n && !n.canceled) bubble.textContent = DRONE_ERR.network;
-        } finally {
-            n.busy = false;
-            vpSend.disabled = false;
-            vpChat.scrollTop = vpChat.scrollHeight;
-        }
     }
 
     function fallbackReply(n, bubble) {
@@ -2071,12 +2020,11 @@ try {
         e.preventDefault();
         const n = talkingNPC;
         if (!n || n.busy) return;
-        if (!n.persona.isAI && !n.persona.isFeedback) return;
+        if (!n.persona.isAI) return;
         const q = vpInput.value.trim();
         if (!q) return;
         chatBubble('msg-user', q);
         vpInput.value = '';
-        if (n.persona.isFeedback) { await sendDroneReport(n, q); return; }
         n.messages.push({ role: 'user', content: q });
         n.busy = true;
         vpSend.disabled = true;

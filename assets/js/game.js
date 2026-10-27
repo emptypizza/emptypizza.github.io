@@ -226,9 +226,6 @@
         }
         if (ui['game-restart']) ui['game-restart'].disabled = state.mode === 'ready';
         region?.setAttribute('data-game-mode', state.mode);
-        if (shown && lastMode === 'running' && (state.mode === 'won' || state.mode === 'lost')) {
-            root.GGHF_FEEDBACK?.onGameOver?.();
-        }
     }
     function drawBoard(state) {
         const fingerprint = JSON.stringify([state.player, state.enemies, state.painted, state.key && [state.key.x, state.key.y]]);

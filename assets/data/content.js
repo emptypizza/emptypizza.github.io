@@ -1,9 +1,8 @@
 // Public portfolio content shared by the homepage and the island.
-// Keep credentials in the receiving service, never in this file.
+// GitHub Pages only: contact uses a public email link.
 window.GGHF_CONTENT = {
   profile: { name: '최경환', studio: 'GGHF', email: 'team.gghf@gmail.com', github: 'https://github.com/emptypizza', itch: 'https://gghf.itch.io' },
   study: { name: '서울인디게임즈', url: 'https://emptypizza.github.io/seoulindies/', description: '게임을 만드는 사람들이 모여 AI 도구의 시행착오와 실제 개발 경험을 나눕니다.' },
-  feedback: { endpoint: 'https://gghf-trello-inbox.netlify.app/trello-inbox', enabled: false },
   checkedAt: '2026-10-27',
   projects: [
     { id: 'nemo', title: 'NEMO_D.O', category: 'PUZZLE / ACTION', status: '스토어 공개', description: '하나의 조작으로 움직이는 두 로봇. 서로 다른 공간의 퍼즐을 함께 풀어가는 듀얼 퍼즐 액션입니다.', role: '게임 기획', technology: 'Android · PC', technologyLabel: '플랫폼', image: 'assets/images/nemo-gameplay.jpg', imageAlt: 'NEMO_D.O의 두 로봇과 분할된 퍼즐 스테이지', imageCaption: 'NEMO_D.O · 실제 게임 화면', url: 'https://play.google.com/store/apps/details?id=com.GGHF.Nemo_DO', action: 'Google Play에서 보기', secondaryUrl: 'https://store.steampowered.com/app/575060/', secondaryAction: 'Steam · Early Access', sources: ['https://play.google.com/store/apps/details?id=com.GGHF.Nemo_DO'] },

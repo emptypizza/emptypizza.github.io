@@ -557,60 +557,8 @@ h1 span {
   color:var(--muted);
   margin-top:12px
 }
-.feedback-panel fieldset {
-  border:0;
-  padding:0;
-  margin:18px 0 0;
-  display:grid;
-  gap:8px;
-  min-width:0
-}
-.feedback-panel label {
-  font-size:.75rem;
-  font-weight:700
-}
-.feedback-panel label:not(:first-of-type) {
-  margin-top:6px
-}
-.feedback-panel label span {
-  font-weight:400;
-  color:var(--muted)
-}
-.feedback-panel input,.feedback-panel textarea {
-  width:100%;
-  border:1px solid #b8c5b0;
-  border-radius:5px;
-  background:#f9faf4;
-  padding:10px;
-  color:var(--ink);
-  font-size:.8rem;
-  resize:vertical
-}
-.feedback-panel input:disabled,.feedback-panel textarea:disabled {
-  opacity:.65
-}
-.feedback-panel button {
-  justify-self:start;
-  margin-top:7px
-}
-.feedback-panel #fb-status {
-  margin:16px 0;
-  min-height:1.5em
-}
-.feedback-panel #fb-status[data-tone=err] {
-  color:var(--danger)
-}
-.feedback-panel #fb-status[data-tone=ok] {
-  color:#245733
-}
-.feedback-panel .privacy-note {
-  font-size:.67rem
-}
-.fb-hp {
-  position:absolute;
-  left:-9999px;
-  opacity:0;
-  height:0
+.feedback-panel .button {
+  margin-top:20px
 }
 .site-footer {
   display:flex;

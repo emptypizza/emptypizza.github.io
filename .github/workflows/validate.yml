@@ -18,5 +18,5 @@ jobs:
           for file in assets/js/*.js assets/data/*.js; do node --check "$file"; done
       - name: Check local links and sharing assets
         run: node scripts/check-site.mjs
-      - name: Verify game and feedback behavior
+      - name: Verify game behavior
         run: node --test tests/*.test.mjs
